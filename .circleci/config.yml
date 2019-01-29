@@ -25,7 +25,7 @@ jobs:
             - v1-stack-deps-{{ .Branch }}-{{ checksum "package.yaml" }}
             - v1-stack-deps-{{ .Branch }}
             - v1-stack-deps
-      - run: stack build --only-dependencies --test
+      - run: stack -j 1 build --only-dependencies --test
       - save_cache:
           key: v1-stack-deps-{{ .Branch }}-{{ checksum "package.yaml" }}
           paths:
