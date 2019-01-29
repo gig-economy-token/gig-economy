@@ -38,7 +38,16 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
-# extra-deps: []
+extra-deps:
+  # Last commit to master as 2019-01-29
+- git: git@github.com:input-output-hk/plutus.git
+  commit: 1c9d628596a21364957cb5565d464d0d62a00f8a
+  subdirs:
+    - language-plutus-core
+    - plutus-tx
+    - plutus-core-interpreter
+    - plutus-ir
+- serialise-0.2.1.0
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
