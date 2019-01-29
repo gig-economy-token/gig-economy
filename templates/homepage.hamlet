@@ -2,15 +2,9 @@
     <div .container>
         <div .row>
             <h1 .header>
-                Yesod—a modern framework for blazing fast websites
-            <h2>
-                Fast, stable & spiced with great community
-            <a href="http://www.yesodweb.com/book/" .btn.btn-info.btn-lg>
-                Read the Book
+                Gig Economy prototype site
 
 <div .container>
-    <!-- Starting
-        ================================================== -->
     <div .bs-docs-section>
         <div .row>
             <div .col-lg-12>

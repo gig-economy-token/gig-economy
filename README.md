@@ -1,3 +1,6 @@
+# Gig Economy prototype
+Here is the prototype for Gig Economy
+
 ## Haskell Setup
 
 1. If you haven't already, [install Stack](https://haskell-lang.org/get-started)
