@@ -25,6 +25,7 @@ jobs:
             - v1-stack-deps-{{ .Branch }}-{{ checksum "package.yaml" }}
             - v1-stack-deps-{{ .Branch }}
             - v1-stack-deps
+      # We run in a single thread because otherwise it runs out of memory in CI
       - run: stack -j 1 build --only-dependencies --test
       - save_cache:
           key: v1-stack-deps-{{ .Branch }}-{{ checksum "package.yaml" }}
