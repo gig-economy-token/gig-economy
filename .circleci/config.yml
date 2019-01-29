@@ -28,6 +28,9 @@ jobs:
       - run: stack build --only-dependencies --test
       - save_cache:
           key: v1-stack-deps-{{ .Branch }}-{{ checksum "package.yaml" }}
+          paths:
+            - ~/.stack
+            - .stack-work
 
       # Build bin
       - restore_cache:
@@ -38,6 +41,9 @@ jobs:
       - run: stack build
       - save_cache:
           key: v1-stack-bin-{{ .Branch }}-{{ checksum "package.yaml" }}
+          paths:
+            - ~/.stack
+            - .stack-work
 
       # Test
       - restore_cache:
@@ -48,3 +54,6 @@ jobs:
       - run: stack test
       - save_cache:
           key: v1-stack-test-{{ .Branch }}-{{ checksum "package.yaml" }}
+          paths:
+            - ~/.stack
+            - .stack-work
