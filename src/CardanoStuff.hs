@@ -1,6 +1,7 @@
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell             #-}
+{-# LANGUAGE DataKinds                   #-}
+{-# LANGUAGE ScopedTypeVariables         #-}
+{-# OPTIONS_GHC -fno-warn-unused-imports #-} -- To silence that we are importing lots of modules for no reason
 
 -- Randomly-named module for importing Cardano/Plutus libraries
 -- in order to force the system to compile them in
