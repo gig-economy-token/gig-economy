@@ -3,6 +3,8 @@
         <div .row>
             <h1 .header>
                 Gig Economy prototype site
+            <h2 .header>
+                #{subtitle}
 
 <div .container>
     <div .bs-docs-section>
