@@ -41,20 +41,20 @@ getHomeR = do
         aDomId <- newIdent
         setTitle "Welcome To Yesod!"
         let
-            emptyBlockchain = []
+            -- emptyBlockchain = []
             -- subtitle = show $ Emulator.runTraceChain emptyBlockchain someOperation
             subtitle = show $ Emulator.runTraceTxPool [sampleTransaction] someOperation
         $(widgetFile "homepage")
 
 
--- Random operation on the emulator
-someOperation :: Emulator.Trace Emulator.MockWallet String
+-- Random operation on the emulator based on the game smart contract
+someOperation :: Emulator.Trace Emulator.MockWallet [[Ledger.Tx]]
 someOperation = do
   let [w1, w2] = Emulator.Wallet <$> [1, 2]
-  Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
+  tx0 <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
   tx1 <- Emulator.walletAction w1 $ startGame
   tx2 <- Emulator.walletAction w2 $ lock "asdf" 4
-  pure $ show tx1 <> show tx2
+  pure $ [tx0, tx1, tx2]
 
 -- Sample mining transaction that fills wallet 1 and 2 with some nano ADA
 sampleTransaction :: Ledger.Tx
