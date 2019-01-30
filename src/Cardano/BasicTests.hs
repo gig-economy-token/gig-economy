@@ -9,7 +9,7 @@
 -- This file is mostly copied from
 -- https://github.com/input-output-hk/plutus/blob/master/plutus-tutorial/tutorial/Tutorial/01-plutus-tx.md
 
-module CardanoStuff where
+module Cardano.BasicTests where
 
 
 -- Main Plutus Tx module

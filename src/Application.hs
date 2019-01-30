@@ -45,7 +45,7 @@ import Handler.Home
 import Handler.Comment
 import Handler.Profile
 
-import CardanoStuff ()
+import Cardano.BasicTests ()
 import Cardano.GameContract ()
 
 -- This line actually creates our YesodDispatch instance. It is the second half
