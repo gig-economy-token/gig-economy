@@ -12,12 +12,12 @@ jobs:
       # Stack setup
       - restore_cache:
           keys:
-            - {{ .Environment.CACHE_VERSION }}-stack-ghc-{{ .Branch }}-{{ checksum "stack.yaml" }}
-            - {{ .Environment.CACHE_VERSION }}-stack-ghc-{{ .Branch }}
-            - {{ .Environment.CACHE_VERSION }}-stack-ghc
+            - c-{{ .Environment.CACHE_VERSION }}-stack-ghc-{{ .Branch }}-{{ checksum "stack.yaml" }}
+            - c-{{ .Environment.CACHE_VERSION }}-stack-ghc-{{ .Branch }}
+            - c-{{ .Environment.CACHE_VERSION }}-stack-ghc
       - run: stack setup
       - save_cache:
-          key: {{ .Environment.CACHE_VERSION }}-stack-ghc-{{ .Branch }}-{{ checksum "stack.yaml" }}
+          key: c-{{ .Environment.CACHE_VERSION }}-stack-ghc-{{ .Branch }}-{{ checksum "stack.yaml" }}
           paths:
             - ~/.stack
       
@@ -25,13 +25,13 @@ jobs:
       # Build deps
       - restore_cache:
           keys:
-            - {{ .Environment.CACHE_VERSION }}-stack-deps-{{ .Branch }}-{{ checksum "package.yaml" }}
-            - {{ .Environment.CACHE_VERSION }}-stack-deps-{{ .Branch }}
-            - {{ .Environment.CACHE_VERSION }}-stack-deps
+            - c-{{ .Environment.CACHE_VERSION }}-stack-deps-{{ .Branch }}-{{ checksum "package.yaml" }}
+            - c-{{ .Environment.CACHE_VERSION }}-stack-deps-{{ .Branch }}
+            - c-{{ .Environment.CACHE_VERSION }}-stack-deps
       # We run in a single thread because otherwise it runs out of memory in CI
       - run: stack -j 1 build --only-dependencies --test
       - save_cache:
-          key: {{ .Environment.CACHE_VERSION }}-stack-deps-{{ .Branch }}-{{ checksum "package.yaml" }}
+          key: c-{{ .Environment.CACHE_VERSION }}-stack-deps-{{ .Branch }}-{{ checksum "package.yaml" }}
           paths:
             - ~/.stack
             - .stack-work
@@ -39,12 +39,12 @@ jobs:
       # Build bin
       - restore_cache:
           keys:
-            - {{ .Environment.CACHE_VERSION }}-stack-bin-{{ .Branch }}-{{ checksum "package.yaml" }}
-            - {{ .Environment.CACHE_VERSION }}-stack-bin-{{ .Branch }}
-            - {{ .Environment.CACHE_VERSION }}-stack-bin
+            - c-{{ .Environment.CACHE_VERSION }}-stack-bin-{{ .Branch }}-{{ checksum "package.yaml" }}
+            - c-{{ .Environment.CACHE_VERSION }}-stack-bin-{{ .Branch }}
+            - c-{{ .Environment.CACHE_VERSION }}-stack-bin
       - run: stack build
       - save_cache:
-          key: {{ .Environment.CACHE_VERSION }}-stack-bin-{{ .Branch }}-{{ checksum "package.yaml" }}
+          key: c-{{ .Environment.CACHE_VERSION }}-stack-bin-{{ .Branch }}-{{ checksum "package.yaml" }}
           paths:
             - ~/.stack
             - .stack-work
@@ -52,12 +52,12 @@ jobs:
       # Test
       - restore_cache:
           keys:
-            - {{ .Environment.CACHE_VERSION }}-stack-test-{{ .Branch }}-{{ checksum "package.yaml" }}
-            - {{ .Environment.CACHE_VERSION }}-stack-test-{{ .Branch }}
-            - {{ .Environment.CACHE_VERSION }}-stack-test
+            - c-{{ .Environment.CACHE_VERSION }}-stack-test-{{ .Branch }}-{{ checksum "package.yaml" }}
+            - c-{{ .Environment.CACHE_VERSION }}-stack-test-{{ .Branch }}
+            - c-{{ .Environment.CACHE_VERSION }}-stack-test
       - run: stack test
       - save_cache:
-          key: {{ .Environment.CACHE_VERSION }}-stack-test-{{ .Branch }}-{{ checksum "package.yaml" }}
+          key: c-{{ .Environment.CACHE_VERSION }}-stack-test-{{ .Branch }}-{{ checksum "package.yaml" }}
           paths:
             - ~/.stack
             - .stack-work
