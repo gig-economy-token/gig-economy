@@ -9,7 +9,6 @@ module Cardano.GuessingGame where
 import qualified Data.Set as Set
 
 import Cardano.GameContract
---import qualified Wallet
 import qualified Ledger
 import qualified Ledger.Interval as Interval
 import qualified Wallet.Emulator as Emulator

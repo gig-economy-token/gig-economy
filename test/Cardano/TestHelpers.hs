@@ -11,7 +11,7 @@ import qualified Wallet.Emulator as Emulator
 import qualified Data.Map as Map
 import Control.Lens
 
--- Sample mining transaction that fills wallet 1 and 2 with some nano ADA
+-- Creates a Tx where the specified wallets have received the specified amout via mining
 createMiningTransaction :: [(Emulator.Wallet, Int)] -> Ledger.Tx
 createMiningTransaction wallets = Ledger.Tx
   { Ledger.txInputs = Set.empty
@@ -30,7 +30,9 @@ createMiningTransaction wallets = Ledger.Tx
                         , Ledger.txOutType = Ledger.PayToPubKey pk
                         }
         where
-          pk = case n of Emulator.Wallet n' -> Ledger.PubKey n'
+          pk = Ledger.PubKey (Emulator.getWallet n)
 
+-- Consolidates the results of a wallet from the emulator
+-- to a single number that we can assert easily
 getResultingFunds :: Emulator.WalletState -> Int
 getResultingFunds ws = Map.foldr (+) 0 $ (Ledger.getValue . Ledger.txOutValue) <$> view Emulator.ownFunds ws
