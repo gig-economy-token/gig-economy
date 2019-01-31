@@ -50,6 +50,8 @@ spec = do
             result `shouldSatisfy` isRight
             getResultingFunds ws1 `shouldBe` 40
             getResultingFunds ws2 `shouldBe` 56
+            -- TODO: Look for a way to check and assert the locked funds of the smart contract
+            -- getFundsFromSmartContract `shouldBe` 4
 
         it "player 1 guesses wrong several times, eventually player 2 reclaims back the funds" $ do
             let [w1, w2] = Emulator.Wallet <$> [1, 2]
