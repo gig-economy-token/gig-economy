@@ -50,6 +50,7 @@ dependencies:
 - wallet-api
 - plutus-playground-lib
 - hint >=0.9.0
+- lens
 
 
 # The library contains all of our application code. The executable
