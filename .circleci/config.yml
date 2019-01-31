@@ -6,6 +6,9 @@ jobs:
     steps:
       - checkout
 
+      # Update stack
+      - run: stack upgrade
+
       # Stack setup
       - restore_cache:
           keys:
