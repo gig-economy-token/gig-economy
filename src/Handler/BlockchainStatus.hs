@@ -17,7 +17,7 @@ import qualified Cardano.Html.Template as CardanoHtml
 
 getBlockchainStatusR :: Handler Html
 getBlockchainStatusR = do
-    x :: Int <- handlerResource <$> ask
+    x :: Int <- (simulatedChain . rheSite . handlerEnv ) <$> ask
 
     defaultLayout $ do
         setTitle "Emulated blockchain status"
