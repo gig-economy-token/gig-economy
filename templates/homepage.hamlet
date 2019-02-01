@@ -11,6 +11,17 @@
         <div .row>
             <div .col-lg-12>
                 <div .page-header>
+                    <h1 #start>#{contentTitle}
+                    <p>
+                        #{content}
+
+    <hr>
+
+<div .container>
+    <div .bs-docs-section>
+        <div .row>
+            <div .col-lg-12>
+                <div .page-header>
                     <h1 #start>Starting
 
                     <p>
