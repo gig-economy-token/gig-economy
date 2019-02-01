@@ -47,7 +47,13 @@ dependencies:
 - foreign-store
 - plutus-tx
 - language-plutus-core
+- wallet-api
+- plutus-playground-lib
+- hint >=0.9.0
+- lens
 
+ghc-options:
+- -Wall
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.

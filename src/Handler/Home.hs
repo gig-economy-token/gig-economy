@@ -3,11 +3,15 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE QuasiQuotes #-}
 module Handler.Home where
 
 import Import
 import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3)
 import Text.Julius (RawJS (..))
+
+import qualified Cardano.GuessingGame as GuessingGame
+import qualified Cardano.Html.Template as CardanoHtml
 
 -- Define our data that will be used for creating the form.
 data FileForm = FileForm
@@ -32,7 +36,14 @@ getHomeR = do
     defaultLayout $ do
         let (commentFormId, commentTextareaId, commentListId) = commentIds
         aDomId <- newIdent
-        setTitle "Welcome To Yesod!"
+        setTitle "Welcome To GiG Economy!"
+        let 
+            (_result, simulatorStatus) = GuessingGame.simulateWithSampleWallets
+            subtitle :: String
+            subtitle = "" :: String
+            contentTitle = "Sample transaction result" :: String
+            content = CardanoHtml.showEmulatorState simulatorStatus
+
         $(widgetFile "homepage")
 
 postHomeR :: Handler Html
@@ -48,6 +59,10 @@ postHomeR = do
         let (commentFormId, commentTextareaId, commentListId) = commentIds
         aDomId <- newIdent
         setTitle "Welcome To Yesod!"
+        let 
+            subtitle = "Here goes some Cardano!" :: String
+            contentTitle = "Sample transaction result" :: String
+            content = "" :: String
         $(widgetFile "homepage")
 
 sampleForm :: Form FileForm

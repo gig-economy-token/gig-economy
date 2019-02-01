@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-module CardanoStuffSpec (spec) where
+module Cardano.BasicTestsSpec (spec) where
 
-import CardanoStuff
+import Cardano.BasicTests
 import Test.Hspec
 import Language.PlutusTx.Plugin
 
