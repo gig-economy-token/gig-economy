@@ -1,29 +1,21 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 module Handler.BlockchainStatus where
 
 import Import
-import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3)
-import Text.Julius (RawJS (..))
-import Yesod.Core.Types
 
-import qualified Cardano.GuessingGame as GuessingGame
+import qualified Wallet.Emulator as Emulator
+import qualified Cardano.Html.Emulator as CardanoHtml
 import qualified Cardano.Html.Template as CardanoHtml
 
 getBlockchainStatusR :: Handler Html
 getBlockchainStatusR = do
-    x :: Int <- (simulatedChain . rheSite . handlerEnv ) <$> ask
-
+    emulatorState <- CardanoHtml.readEmulatorState
+    CardanoHtml.simulateStep (Emulator.processPending)  -- FIXME: remove
     defaultLayout $ do
         setTitle "Emulated blockchain status"
         let 
-            (_result, simulatorStatus) = GuessingGame.simulateWithSampleWallets
-            contentTitle = "Sample transaction result" :: String
-            content = CardanoHtml.showEmulatorState simulatorStatus
+            contentTitle = "Current emulator state" :: String
+            content = CardanoHtml.showEmulatorState emulatorState
 
         $(widgetFile "blockchainStatus")
