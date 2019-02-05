@@ -45,6 +45,8 @@ import Handler.Home
 import Handler.Comment
 import Handler.Profile
 import Handler.BlockchainStatus
+import Handler.GuessingGame.Player1
+import Handler.GuessingGame.Player2
 import qualified Wallet.Emulator as Emulator
 
 -- This line actually creates our YesodDispatch instance. It is the second half

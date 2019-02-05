@@ -119,24 +119,19 @@ instance Yesod App where
                     , menuItemAccessCallback = True
                     }
                 , NavbarLeft $ MenuItem
-                    { menuItemLabel = "Blockchain status"
+                    { menuItemLabel = "Simulated Blockchain Status"
                     , menuItemRoute = BlockchainStatusR
                     , menuItemAccessCallback = True
                     }
-                , NavbarLeft $ MenuItem
-                    { menuItemLabel = "Profile"
-                    , menuItemRoute = ProfileR
-                    , menuItemAccessCallback = isJust muser
+                , NavbarRight $ MenuItem
+                    { menuItemLabel = "Player 1"
+                    , menuItemRoute = Player1R
+                    , menuItemAccessCallback = True
                     }
                 , NavbarRight $ MenuItem
-                    { menuItemLabel = "Login"
-                    , menuItemRoute = AuthR LoginR
-                    , menuItemAccessCallback = isNothing muser
-                    }
-                , NavbarRight $ MenuItem
-                    { menuItemLabel = "Logout"
-                    , menuItemRoute = AuthR LogoutR
-                    , menuItemAccessCallback = isJust muser
+                    { menuItemLabel = "Player 2"
+                    , menuItemRoute = Player2R
+                    , menuItemAccessCallback = True
                     }
                 ]
 
@@ -168,13 +163,7 @@ instance Yesod App where
         -> Bool       -- ^ Whether or not this is a "write" request.
         -> Handler AuthResult
     -- Routes not requiring authentication.
-    isAuthorized (AuthR _) _ = return Authorized
-    isAuthorized CommentR _ = return Authorized
-    isAuthorized HomeR _ = return Authorized
-    isAuthorized FaviconR _ = return Authorized
-    isAuthorized RobotsR _ = return Authorized
-    isAuthorized (StaticR _) _ = return Authorized
-    isAuthorized BlockchainStatusR _ = pure Authorized
+    isAuthorized _ _ = pure Authorized
 
     -- the profile route requires that the user is authenticated, so we
     -- delegate to that function

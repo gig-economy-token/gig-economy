@@ -11,6 +11,15 @@
 
 /status BlockchainStatusR GET POST
 
+/player1 Player1R GET
+/player1/depositFunds Player1DepositFundsR POST
+/player1/startGame Player1StartGameR POST
+/player1/guess Player1GuessR POST
+
+/player2 Player2R GET
+/player2/depositFunds Player2DepositFundsR POST
+/player2/lock Player2LockR POST
+
 /comments CommentR POST
 
 /profile ProfileR GET
