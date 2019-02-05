@@ -126,9 +126,12 @@ $else
   <ol>
     $forall block <- reverse bs
       <li>
-        <ul>
-          $forall tx <- block
-            <li> #{showTx tx}
+        $if null block
+          Empty block
+        $else
+          <ul>
+            $forall tx <- block
+              <li> #{showTx tx}
 |]
 
 showUtxoIndex :: Ledger.UtxoIndex -> Html
@@ -167,7 +170,6 @@ showEmulatorState state = [shamlet|
   <li> _index
     <ul>
       <li>#{showUtxoIndex $ Emulator._index state}
-  <li> _chainNewestFirst - in actual order
-    <ul>
-      <li>#{showChain $ Emulator._chainNewestFirst state}
+  <li>_chainNewestFirst - in actual order
+    <p>#{showChain $ Emulator._chainNewestFirst state}
 |]

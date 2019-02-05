@@ -11,11 +11,15 @@ import qualified Cardano.Html.Template as CardanoHtml
 getBlockchainStatusR :: Handler Html
 getBlockchainStatusR = do
     emulatorState <- CardanoHtml.readEmulatorState
-    CardanoHtml.simulateStep (Emulator.processPending)  -- FIXME: remove
     defaultLayout $ do
         setTitle "Emulated blockchain status"
-        let 
+        let
             contentTitle = "Current emulator state" :: String
             content = CardanoHtml.showEmulatorState emulatorState
 
         $(widgetFile "blockchainStatus")
+
+postBlockchainStatusR :: Handler Html
+postBlockchainStatusR = do
+    _ <- CardanoHtml.simulateStep (Emulator.processPending)
+    getBlockchainStatusR

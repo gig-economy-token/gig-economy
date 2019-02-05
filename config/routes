@@ -8,7 +8,8 @@
 /robots.txt RobotsR GET
 
 / HomeR GET
-/status BlockchainStatusR GET
+
+/status BlockchainStatusR GET POST
 
 /comments CommentR POST
 
