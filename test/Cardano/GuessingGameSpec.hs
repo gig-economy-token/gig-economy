@@ -78,3 +78,44 @@ spec = do
             result `shouldSatisfy` isRight
             getResultingFunds ws1 `shouldBe` 40
             getResultingFunds ws2 `shouldBe` 60
+
+        it "Multi-step play" $ do
+            let [w1, w2] = Emulator.Wallet <$> [1, 2]
+                initialTx = createMiningTransaction [(w1, 40), (w2, 60)]
+
+                trace :: Emulator.Trace Emulator.MockWallet ()
+                trace = do
+                        _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
+                        pure ()
+
+                simulateAndAssertFunds tr (w, funds) = do
+                  let (result, state) = Emulator.runTraceTxPool [initialTx] $ do
+                                              _ <- tr
+                                              pure ()
+                      ws = Map.lookup w $ Emulator._walletStates state
+                  result `shouldSatisfy` isRight
+                  getResultingFunds <$> ws `shouldBe` Just funds
+                  
+
+{-
+                (result, state) = Emulator.runTraceTxPool [initialTx] $ do
+                    _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
+                    _ <- Emulator.walletAction w1 $ startGame
+                    _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
+                    _ <- Emulator.walletAction w2 $ lock "asdf" 4
+                    _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
+                    _ <- Emulator.walletAction w1 $ guess "asdf"
+                    _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
+                    pure ()
+                something :: Emulator.Trace Emulator.MockWallet ()
+                something = pure ()
+                walletStates = Emulator._walletStates state
+                Just ws1 = Map.lookup w1 walletStates
+                Just ws2 = Map.lookup w2 walletStates
+                
+            result `shouldSatisfy` isRight
+            getResultingFunds ws1 `shouldBe` 44
+            getResultingFunds ws2 `shouldBe` 56
+-}
+            simulateAndAssertFunds trace (w1, 41)
+

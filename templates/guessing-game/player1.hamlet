@@ -3,9 +3,22 @@
         <div .row>
             <div .col-lg-12>
                 <div .page-header>
-                    <h1 #start>#{contentTitle}
+                    <h1 #start>Player 1 #{action}
                     <p>#{content}
+                    <h2>Status
+                    <p>#{status}
                     
-                    <h1>Submit an empty block
-                    <form method="POST">
-                      <button .btn.btn-primary type="submit">Submit a new block to the simulated blockchain
+                    <h1>Actions
+
+                    <h2>Deposit funds
+                    <form method=POST action=@{Player1DepositFundsR}>
+                      <button .btn.btn-primary type="submit">Deposit 50 nanoADA
+
+                    <h2>Start game
+                    <form method=POST action=@{Player1StartGameR}>
+                      <button .btn.btn-primary type="submit">Start a new game
+
+                    <h2>Guess
+                    <form method=POST action=@{Player1GuessR}>
+                      <input type=text name=guess placeholder="Type something here">
+                      <button .btn.btn-primary type="submit">Guess
