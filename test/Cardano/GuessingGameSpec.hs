@@ -100,7 +100,6 @@ spec = do
                 simulateAndAssertFunds tr walls = do
                   let (result, state) = Emulator.runTraceTxPool [initialTx] $ do
                                               tr
-                  print (Emulator._emulatorLog state)
                   result `shouldSatisfy` isRight
                   forM_ walls (\(w, funds) -> do
                     let ws = Map.lookup w $ Emulator._walletStates state
@@ -128,14 +127,3 @@ spec = do
                           pure ()
                           
             simulateAndAssertFunds trace3 [(w1, 44), (w2, 56)]
-
-            let trace4 = do
-                          trace
-                          _ <- Emulator.walletAction w1 $ startGame
-                          _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
-                          _ <- Emulator.walletAction w2 $ lock "asdf" 400
-                          _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
-                          pure ()
-                          
-            simulateAndAssertFunds trace4 [(w1, 44), (w2, 56)]
-
