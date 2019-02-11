@@ -10,7 +10,6 @@ module Handler.GuessingGame.Player1
 import Import
 
 import Cardano.Helpers
-import qualified Wallet.API as WalletAPI
 import qualified Wallet.Emulator as Emulator
 import Cardano.Html.Emulator
 import Cardano.Emulator.GuessingGame

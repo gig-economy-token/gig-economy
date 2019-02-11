@@ -1,14 +1,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE QuasiQuotes #-}
 module Handler.Home where
 
 import Import
-import Yesod.Core.Types
-import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3)
-import Text.Julius (RawJS (..))
 
 import qualified Cardano.GuessingGame as GuessingGame
 import qualified Cardano.Html.Template as CardanoHtml

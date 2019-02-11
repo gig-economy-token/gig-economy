@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Cardano.GuessingGameSpec (spec) where
 
-import Cardano.TestHelpers
+import Cardano.Helpers
 import Test.Hspec
 import qualified Wallet.Emulator as Emulator
 import Cardano.GameContract

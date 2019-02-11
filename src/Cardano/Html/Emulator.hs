@@ -1,11 +1,9 @@
 {-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE TemplateHaskell #-}
 module Cardano.Html.Emulator where
 
 import Import
 import Yesod.Core.Types
 
-import qualified Ledger as Ledger
 import qualified Wallet.Emulator as Emulator
 import Cardano.Emulator
 
