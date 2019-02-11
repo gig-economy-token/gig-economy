@@ -17,6 +17,11 @@ readSimulatedChainRef = (simulatedChain . rheSite . handlerEnv) <$> ask
 readEmulatorState :: Handler Emulator.EmulatorState
 readEmulatorState = scEmulatorState <$> readSimulatedChain
 
+-- The multi-step is based on accumulating steps on a trace that is stored in a IORef
+-- on the main thread.
+-- Effectively, on each appendStep we run the whole trace (inneficcient),
+-- but it works, and for a prototype phase is good enough.
+
 -- Append a step with notifications to all known wallets and re-simulate
 appendStep :: Emulator.Trace Emulator.MockWallet () -> Handler ()
 appendStep newStep = appendStep' stepAndNotify

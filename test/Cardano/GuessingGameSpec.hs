@@ -81,14 +81,7 @@ spec = do
             getResultingFunds ws2 `shouldBe` 60
 
         it "Multi-step play" $ do
-            -- The multi-step is based on accumulating steps on a trace that is stored in a IORef
-            -- on the main thread.
-            -- Effectively, on each page refresh we run the whole trace (very inneficcient),
-            -- but it works, and for a prototype phase is good enough.
-            -- Possible performance optimization:
-            --    Store in another IORef the state of the last emulator run,
-            --    and return that emulator state without repeating the process
-            --    until the user executes another action
+            -- multi-step prototype
             let [w1, w2] = Emulator.Wallet <$> [1, 2]
                 initialTx = createMiningTransaction [(w1, 40), (w2, 60)]
 
