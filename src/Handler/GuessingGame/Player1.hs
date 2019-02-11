@@ -15,6 +15,7 @@ import qualified Wallet.Emulator as Emulator
 import Cardano.Html.Emulator
 import Cardano.Emulator.GuessingGame
 import qualified Data.Map as Map
+import Cardano.GameContract
 
 renderLayout :: Html -> Html -> Handler Html
 renderLayout action content = do
@@ -34,7 +35,17 @@ getPlayer1R :: Handler Html
 getPlayer1R = renderLayout "Status" "Player 1 starts the game and tries to guess"
 
 postPlayer1StartGameR :: Handler Html
-postPlayer1StartGameR = renderLayout "- Start game" "FIXME: Start Game"
+postPlayer1StartGameR = do
+          appendStep $ ((Emulator.walletAction player1Wallet $ startGame) >> pure ())
+          renderLayout "- Start game" "Started new Game"
 
 postPlayer1GuessR :: Handler Html
-postPlayer1GuessR = renderLayout "- Guess" "FIXME: Guess"
+postPlayer1GuessR = do
+      guess' <- lookupPostParam "guess"
+      let
+        valid = unpack <$> guess'
+      case valid of
+        Nothing -> renderLayout "- Guess" "Invalid form submitted"
+        Just g -> do
+            appendStep $ ((Emulator.walletAction player1Wallet $ guess g) >> pure ())
+            renderLayout "- Guess" "Guessed"
