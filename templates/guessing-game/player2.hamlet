@@ -3,9 +3,20 @@
         <div .row>
             <div .col-lg-12>
                 <div .page-header>
-                    <h1 #start>#{contentTitle}
+                    <h1 #start>Player 2 #{action}
                     <p>#{content}
+                    <h2>Status
+                    <p>#{status}
                     
-                    <h1>Submit an empty block
-                    <form method="POST">
-                      <button .btn.btn-primary type="submit">Submit a new block to the simulated blockchain
+                <h1>Actions
+
+                <h2>Lock
+                <form method=POST action=@{Player2LockR}>
+                  <div .form-group>
+                    <label>Password to lock the funds
+                    <input .form-control type=text name=secret placeholder="Type the secret password here">
+                  <div .form-group>
+                    <label>Funds to lock
+                    <input .form-control type=number name=funds placeholder="How much do you want to lock?">
+
+                  <button .btn.btn-primary.form-control type="submit">Lock funds

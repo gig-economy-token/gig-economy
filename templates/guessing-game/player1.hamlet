@@ -10,10 +10,6 @@
                     
                     <h1>Actions
 
-                    <h2>Deposit funds
-                    <form method=POST action=@{Player1DepositFundsR}>
-                      <button .btn.btn-primary type="submit">Deposit 50 nanoADA
-
                     <h2>Start game
                     <form method=POST action=@{Player1StartGameR}>
                       <button .btn.btn-primary type="submit">Start a new game
