@@ -9,11 +9,15 @@ import Cardano.Emulator
 
 
 readSimulatedChain :: Handler SimulatedChain
-readSimulatedChain = (simulatedChain . rheSite . handlerEnv) <$> ask >>= readIORef
+readSimulatedChain = readSimulatedChainRef >>= readIORef
+
+readSimulatedChainRef :: Handler (IORef SimulatedChain)
+readSimulatedChainRef = (simulatedChain . rheSite . handlerEnv) <$> ask
 
 readEmulatorState :: Handler Emulator.EmulatorState
 readEmulatorState = scEmulatorState <$> readSimulatedChain
 
+-- Append a step with notifications to all known wallets and re-simulate
 appendStep :: Emulator.Trace Emulator.MockWallet () -> Handler ()
 appendStep newStep = appendStep' stepAndNotify
   where
@@ -21,6 +25,7 @@ appendStep newStep = appendStep' stepAndNotify
                     newStep
                     Emulator.processPending >>= Emulator.walletsNotifyBlock allKnownWallets >> pure ()
 
+-- Append a step and re-simulate
 appendStep' :: Emulator.Trace Emulator.MockWallet () -> Handler ()
 appendStep' newStep = do
                         scRef <- readSimulatedChainRef
@@ -33,6 +38,3 @@ appendStep' newStep = do
                                       , scTrace = newTrace
                                       }
                         atomicModifyIORef' scRef (\_ -> (sc', ()))
-  where
-    readSimulatedChainRef :: Handler (IORef SimulatedChain)
-    readSimulatedChainRef = (simulatedChain . rheSite . handlerEnv) <$> ask

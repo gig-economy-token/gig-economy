@@ -22,5 +22,5 @@ getBlockchainStatusR = do
 
 postBlockchainStatusR :: Handler Html
 postBlockchainStatusR = do
-    _ <- CardanoHtml.appendStep (Emulator.processPending >>= Emulator.walletsNotifyBlock [Emulator.Wallet 1] >> pure ())
+    CardanoHtml.appendStep (pure ())
     getBlockchainStatusR
