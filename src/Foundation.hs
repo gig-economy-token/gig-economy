@@ -105,7 +105,6 @@ instance Yesod App where
         master <- getYesod
         mmsg <- getMessage
 
-        -- muser <- maybeAuthPair
         mcurrentRoute <- getCurrentRoute
 
         -- Get the breadcrumbs, as defined in the YesodBreadcrumbs instance.
