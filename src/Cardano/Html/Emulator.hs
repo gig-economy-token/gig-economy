@@ -17,12 +17,19 @@ readEmulatorState :: Handler Emulator.EmulatorState
 readEmulatorState = scEmulatorState <$> readSimulatedChain
 
 appendStep :: Emulator.Trace Emulator.MockWallet () -> Handler ()
-appendStep newStep = do
+appendStep newStep = appendStep' stepAndNotify
+  where
+    stepAndNotify = do
+                    newStep
+                    Emulator.processPending >>= Emulator.walletsNotifyBlock allKnownWallets >> pure ()
+
+appendStep' :: Emulator.Trace Emulator.MockWallet () -> Handler ()
+appendStep' newStep = do
                         scRef <- readSimulatedChainRef
                         sc <- readIORef scRef
                         let prevTrace = scTrace sc
                             newTrace = prevTrace >> newStep
-                            (_, newEmulatorState) = Emulator.runTraceTxPool [] newTrace
+                            (_, newEmulatorState) = Emulator.runTraceTxPool initialTx newTrace
                             sc' = SimulatedChain
                                       { scEmulatorState = newEmulatorState
                                       , scTrace = newTrace
@@ -31,4 +38,3 @@ appendStep newStep = do
   where
     readSimulatedChainRef :: Handler (IORef SimulatedChain)
     readSimulatedChainRef = (simulatedChain . rheSite . handlerEnv) <$> ask
-

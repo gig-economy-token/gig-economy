@@ -16,9 +16,11 @@ emptySimulatedChain = SimulatedChain
                         }
 
 defaultSimulatedChain :: SimulatedChain
-defaultSimulatedChain = fromTx
-                          [ Cardano.Emulator.GuessingGame.miningTx
-                          ]
+defaultSimulatedChain = fromTx initialTx
+
+initialTx :: [Tx]
+initialTx = [ Cardano.Emulator.GuessingGame.miningTx
+            ]
 
 allKnownWallets :: [Wallet]
 allKnownWallets = mconcat
