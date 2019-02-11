@@ -7,31 +7,28 @@ import Yesod.Core.Types
 
 import qualified Ledger as Ledger
 import qualified Wallet.Emulator as Emulator
+import Cardano.Emulator
 
+
+readSimulatedChain :: Handler SimulatedChain
+readSimulatedChain = (simulatedChain . rheSite . handlerEnv) <$> ask >>= readIORef
 
 readEmulatorState :: Handler Emulator.EmulatorState
-readEmulatorState = (simulatedChain . rheSite . handlerEnv) <$> ask >>= readIORef
+readEmulatorState = scEmulatorState <$> readSimulatedChain
 
-updateEmulatorState :: (Emulator.EmulatorState -> (Emulator.EmulatorState, a)) -> Handler a
-updateEmulatorState f = do
-  ref <- (simulatedChain . rheSite . handlerEnv) <$> ask
-  atomicModifyIORef' ref f
-
-simulateStep :: forall a. Emulator.Trace Emulator.MockWallet a -> Handler (Either Emulator.AssertionError a)
-simulateStep op = updateEmulatorState modifyOp
+appendStep :: Emulator.Trace Emulator.MockWallet () -> Handler ()
+appendStep newStep = do
+                        scRef <- readSimulatedChainRef
+                        sc <- readIORef scRef
+                        let prevTrace = scTrace sc
+                            newTrace = prevTrace >> newStep
+                            (_, newEmulatorState) = Emulator.runTraceTxPool [] newTrace
+                            sc' = SimulatedChain
+                                      { scEmulatorState = newEmulatorState
+                                      , scTrace = newTrace
+                                      }
+                        atomicModifyIORef' scRef (\_ -> (sc', ()))
   where
-    modifyOp :: Emulator.EmulatorState -> (Emulator.EmulatorState, Either Emulator.AssertionError a)
-    modifyOp (Emulator.EmulatorState {..}) = (b, a)
-      where
-        (a, b) = Emulator.runTraceTxPool (concat $ reverse _chainNewestFirst) op
+    readSimulatedChainRef :: Handler (IORef SimulatedChain)
+    readSimulatedChainRef = (simulatedChain . rheSite . handlerEnv) <$> ask
 
-appendTxAsNewBlock :: Ledger.Tx -> Handler (Either Emulator.AssertionError ())
-appendTxAsNewBlock tx = updateEmulatorState modifyOp
-  where
-    modifyOp :: Emulator.EmulatorState -> (Emulator.EmulatorState, Either Emulator.AssertionError ())
-    modifyOp (Emulator.EmulatorState {..}) = (b, a)
-      where
-        (a, b) = Emulator.runTraceTxPool (tx:concat _chainNewestFirst) $ do
-                    _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [Emulator.Wallet 1]
-                    pure ()
-                  

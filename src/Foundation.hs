@@ -26,7 +26,7 @@ import qualified Yesod.Core.Unsafe as Unsafe
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 
-import Wallet.Emulator (EmulatorState)
+import Cardano.Emulator
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -38,7 +38,7 @@ data App = App
     , appConnPool    :: ConnectionPool -- ^ Database connection pool.
     , appHttpManager :: Manager
     , appLogger      :: Logger
-    , simulatedChain :: IORef EmulatorState
+    , simulatedChain :: IORef SimulatedChain
     }
 
 data MenuItem = MenuItem

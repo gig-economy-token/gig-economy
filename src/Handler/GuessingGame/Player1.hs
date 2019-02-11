@@ -11,6 +11,7 @@ module Handler.GuessingGame.Player1
 import Import
 
 import Cardano.Helpers
+import qualified Wallet.API as WalletAPI
 import qualified Wallet.Emulator as Emulator
 import Cardano.Html.Emulator
 import qualified Data.Map as Map
@@ -37,9 +38,9 @@ getPlayer1R = renderLayout "Status" "Player 1 starts the game and tries to guess
 
 postPlayer1DepositFundsR :: Handler Html
 postPlayer1DepositFundsR = do
-  r <- appendTxAsNewBlock $ createMiningTransaction [(wallet1, 50)]
-  simulateStep $ Emulator.processPending >>= Emulator.walletsNotifyBlock [wallet1]
-  print r
+  error "Not implemented yet"
+  --appendStep $ _f $ Emulator.liftMockWallet wallet1 (WalletAPI.submitTxn $ createMiningTransaction [(wallet1, 50)])
+  --_ <- appendStep $ (Emulator.processPending >>= Emulator.walletsNotifyBlock [wallet1] >>= \x -> pure ())
   renderLayout "- Mine funds" "Player1 mined 50 nanoADA"
 
 postPlayer1StartGameR :: Handler Html

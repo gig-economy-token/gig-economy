@@ -47,7 +47,7 @@ import Handler.Profile
 import Handler.BlockchainStatus
 import Handler.GuessingGame.Player1
 import Handler.GuessingGame.Player2
-import qualified Wallet.Emulator as Emulator
+import qualified Cardano.Emulator as Emulator
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -68,7 +68,7 @@ makeFoundation appSettings = do
         (if appMutableStatic appSettings then staticDevel else static)
         (appStaticDir appSettings)
 
-    simulatedChain <- newIORef Emulator.emptyEmulatorState
+    simulatedChain <- newIORef Emulator.defaultSimulatedChain
 
     -- We need a log function to create a connection pool. We need a connection
     -- pool to create our foundation. And we need our foundation to get a
