@@ -7,26 +7,10 @@ import Import
 
 import qualified Wallet.Emulator as Emulator
 import qualified Cardano.Html.Emulator as CardanoHtml
-import qualified Data.Map as Map
 import Ledger
-import Cardano.Helpers
 import Cardano.Emulator.GuessingGame
 import Cardano.GameContract
-
-renderLayout :: Html -> Html -> Handler Html
-renderLayout action content = do
-    emulatorState <- CardanoHtml.readEmulatorState
-    defaultLayout $ do
-        setTitle "Player 2 status"
-        let
-            fundsInWallet2 = fromMaybe 0 $ getResultingFunds <$> Map.lookup player2Wallet (Emulator._walletStates emulatorState)
-            status = [shamlet|
-<ul>
-  <li>Funds in wallet: #{fundsInWallet2}
-|]
-
-        $(widgetFile "guessing-game/player2")
-
+import Handler.GuessingGame.Player2.View
 
 getPlayer2R :: Handler Html
 getPlayer2R = renderLayout "Status" "Player 2 locks some funds"

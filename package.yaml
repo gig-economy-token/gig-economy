@@ -53,6 +53,7 @@ dependencies:
 - lens
 - servant-client
 - http-client
+- blaze-html
 
 ghc-options:
 - -Wall
