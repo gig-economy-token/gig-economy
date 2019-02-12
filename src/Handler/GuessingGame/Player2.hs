@@ -46,7 +46,7 @@ postPlayer2LockR = do
             pure (secret, funds)
   case valid of
       Just (secret, funds) -> do
-          CardanoHtml.appendStep $ ((Emulator.walletAction player2Wallet $ lock secret funds) >> pure ())
+          CardanoHtml.appendStepAndNotifyKnownWallets $ ((Emulator.walletAction player2Wallet $ lock secret funds) >> pure ())
           renderLayout "Player 2 locked X funds" "Funds"
       Nothing ->
           renderLayout "Player 2 Failed to lock funds" ""

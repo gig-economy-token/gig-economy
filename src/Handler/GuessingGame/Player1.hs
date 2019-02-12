@@ -46,5 +46,5 @@ postPlayer1GuessR = do
       case valid of
         Nothing -> renderLayout "- Guess" "Invalid form submitted"
         Just g -> do
-            appendStep $ ((Emulator.walletAction player1Wallet $ guess g) >> pure ())
+            appendStepAndNotifyKnownWallets $ ((Emulator.walletAction player1Wallet $ guess g) >> pure ())
             renderLayout "- Guess" "Guessed"

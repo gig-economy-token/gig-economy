@@ -22,5 +22,5 @@ getBlockchainStatusR = do
 
 postBlockchainStatusR :: Handler Html
 postBlockchainStatusR = do
-    CardanoHtml.appendStep (pure ())
+    CardanoHtml.appendStepAndNotifyKnownWallets (pure ())
     getBlockchainStatusR
