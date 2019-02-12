@@ -60,29 +60,9 @@ ghc-options:
 - -Werror
 
 default-extensions:
-  - BangPatterns
-  - DeriveFunctor
-  - DeriveFoldable
-  - DeriveGeneric
-  - DeriveLift
-  - DeriveTraversable
-  - EmptyDataDecls
-  - FlexibleContexts
-  - FlexibleInstances
-  - FunctionalDependencies
-  - GADTs
-  - GeneralizedNewtypeDeriving
-  - LambdaCase
-  - MultiParamTypeClasses
   - NamedFieldPuns
-  - NoMonomorphismRestriction
   - OverloadedStrings
-  - RankNTypes
   - RecordWildCards
-  - RoleAnnotations
-  - ScopedTypeVariables
-  - TypeSynonymInstances
-  - TypeFamilies
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.

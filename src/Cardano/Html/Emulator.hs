@@ -1,5 +1,9 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE NoImplicitPrelude    #-}
+{-# LANGUAGE ConstraintKinds      #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+
 module Cardano.Html.Emulator
   ( HasSimulatedChain(..)
   , appendStepAndNotifyKnownWallets
