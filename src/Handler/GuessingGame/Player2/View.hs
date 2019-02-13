@@ -12,8 +12,8 @@ import Cardano.Helpers
 import Cardano.Emulator.GuessingGame
 import Handler.GuessingGame.View
 
-renderLayout :: Html -> Html -> Handler Html
-renderLayout action content = do
+renderLayout' :: Html -> Html -> (Widget, Enctype) -> Handler Html
+renderLayout' action content (form, enctype) = do
     emulatorState <- CardanoHtml.readEmulatorState
     defaultLayout $ do
         setTitle "Player 2 status"

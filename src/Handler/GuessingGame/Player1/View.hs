@@ -14,8 +14,8 @@ import Cardano.Emulator.GuessingGame
 import qualified Data.Map as Map
 import Handler.GuessingGame.View
 
-renderLayout :: Html -> Html -> Handler Html
-renderLayout action content = do
+renderLayout :: Html -> Html -> (Widget, Enctype) ->Handler Html
+renderLayout action content (guessForm, guessFormEnctype) = do
     emulatorState <- readEmulatorState
     let
         status = PlayerStatus

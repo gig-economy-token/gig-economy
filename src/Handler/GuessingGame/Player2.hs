@@ -11,26 +11,36 @@ import Ledger
 import Cardano.Emulator.GuessingGame
 import Cardano.GameContract
 import Handler.GuessingGame.Player2.View
+import Yesod.Form.Bootstrap3
 
 getPlayer2R :: Handler Html
-getPlayer2R = renderLayout "Status" "Player 2 locks some funds"
+getPlayer2R = do
+              form <- generateFormPost lockForm
+              renderLayout' "Status" "Player 2 locks some funds" form
+
+data LockAction = LockAction
+  { laSecret :: Text
+  , laFunds :: Int
+  } deriving Show
+
+lockForm :: Html -> MForm Handler (FormResult LockAction, Widget)
+lockForm = renderDivs $ LockAction
+      <$> areq secretField (bfs ("Secret" :: Text)) Nothing
+      <*> areq fundsField (bfs ("Funds to lock" :: Text)) Nothing
+  where
+    secretField = checkBool (/= "") ("Please write a secret to lock the funds" :: Text) textField
+    fundsField = checkBool (> 0) ("Please input the funds you want to lock" :: Text) intField
 
 postPlayer2LockR :: Handler Html
 postPlayer2LockR = do
-  secret' <- lookupPostParam "secret"
-  funds' <- lookupPostParam "funds"
-  let
-    valid = do
-            secret <- unpack <$> secret'
-            funds <- do
-                        f <- unpack <$> funds'
-                        f' <- readMay f
-                        f'' <- if f' < 1 then Nothing else pure f'
-                        pure $ Value f''
-            pure (secret, funds)
-  case valid of
-      Just (secret, funds) -> do
-          CardanoHtml.appendStepAndNotifyKnownWallets $ ((Emulator.walletAction player2Wallet $ lock secret funds) >> pure ())
-          renderLayout "Player 2 locked X funds" "Funds"
-      Nothing ->
-          renderLayout "Player 2 Failed to lock funds" ""
+  ((result, widget), enctype) <- runFormPost lockForm
+  case result of
+      FormSuccess LockAction {..} -> do
+          CardanoHtml.appendStepAndNotifyKnownWallets $
+              do
+                _ <- Emulator.walletAction player2Wallet $ lock (unpack laSecret) (Value laFunds)
+                pure ()
+          form <- generateFormPost lockForm
+          renderLayout' "Player 2 locked X funds" "Funds" form
+      FormMissing -> getPlayer2R
+      FormFailure _ -> renderLayout' "Player 2 error" "Funds" (widget, enctype)

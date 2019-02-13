@@ -16,9 +16,7 @@
                     <button .btn.btn-primary.form-control type="submit">Start a new game
 
                 <h2>Guess
-                <form method=POST action=@{Player1GuessR}>
-                  <div .form-group>
-                    <label>Guess
-                    <input .form-control type=text name=guess placeholder="Type something here">
+                <form method=POST action=@{Player1GuessR} enctype=#{guessFormEnctype}>
+                  ^{guessForm}
 
                   <button .btn.btn-primary.form-control type="submit">Guess
