@@ -7,7 +7,7 @@ import Import
 
 import qualified Wallet.Emulator as Emulator
 import qualified Cardano.Html.Emulator as CardanoHtml
-import Ledger
+import Ledger.Ada
 import Cardano.Emulator.GuessingGame
 import Cardano.GameContract
 import Handler.GuessingGame.Player2.View
@@ -38,7 +38,7 @@ postPlayer2LockR = do
       FormSuccess LockAction {..} -> do
           CardanoHtml.appendStepAndNotifyKnownWallets $
               do
-                _ <- Emulator.walletAction player2Wallet $ lock (unpack laSecret) (Value laFunds)
+                _ <- Emulator.walletAction player2Wallet $ lock (unpack laSecret) (adaValueOf laFunds)
                 pure ()
           form <- generateFormPost lockForm
           renderLayout' "Player 2 locked X funds" "Funds" form
