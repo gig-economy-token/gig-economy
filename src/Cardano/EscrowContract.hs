@@ -37,16 +37,18 @@ myFirstValidator contractNo = ValidatorScript $ applyScript valScript (lifted co
           [|| \(_ :: ContractNo) (LockingPin submittedPIN) (UnlockingPin myPIN) (_ :: PendingTx) ->
 
            let and = $$(P.and)
+               equals = (==)
                error = $$(P.error)
                traceH = $$(P.traceH)
            in
-           if | (and (submittedPIN == myPIN) (myPIN == 1234)) -> ()
-              | (and (submittedPIN == myPIN) (myPIN == 1235)) -> ()--error (traceH "Success 1235" ())
-              | (and (submittedPIN == 1234) (myPIN == 1234)) -> error (traceH "1234 - 1234" ())
-              | (and (submittedPIN == 1234) (myPIN == 1235)) -> error (traceH "1234 - 1235" ())
-              | (and (submittedPIN == 1235) (myPIN == 1234)) -> error (traceH "1235 - 1234" ())
-              | (and (submittedPIN == 1235) (myPIN == 1235)) -> error (traceH "1235 - 1235" ())
-              | otherwise -> error (traceH "unknown - unknown" ())
+           traceH "SADFDSAFASDF" ( 
+           if | (and (equals submittedPIN myPIN) (equals myPIN 1234)) -> ()
+              | (and (equals submittedPIN myPIN) (equals myPIN 1235)) -> ()--error (traceH "Success 1235" ())
+              | (and (equals submittedPIN 1234) (equals myPIN 1234)) -> error (traceH "1234 - 1234" ())
+              | (and (equals submittedPIN 1234) (equals myPIN 1235)) -> error (traceH "1234 - 1235" ())
+              | (and (equals submittedPIN 1235) (equals myPIN 1234)) -> error (traceH "1235 - 1234" ())
+              | (and (equals submittedPIN 1235) (equals myPIN 1235)) -> error (traceH "1235 - 1235" ())
+              | otherwise -> error (traceH "unknown - unknown" ()))
            ||])
 
 interval' :: Interval Slot

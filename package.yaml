@@ -57,7 +57,7 @@ dependencies:
 
 ghc-options:
 - -Wall
-- -Werror
+#- -Werror
 
 default-extensions:
   - NamedFieldPuns
