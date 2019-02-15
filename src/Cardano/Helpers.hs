@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell   #-}
 
-module Cardano.TestHelpers where
+module Cardano.Helpers where
 
 import qualified Data.Set as Set
 

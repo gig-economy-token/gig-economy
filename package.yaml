@@ -51,9 +51,18 @@ dependencies:
 - plutus-playground-lib
 - hint >=0.9.0
 - lens
+- servant-client
+- http-client
+- blaze-html
 
 ghc-options:
 - -Wall
+- -Werror
+
+default-extensions:
+  - NamedFieldPuns
+  - OverloadedStrings
+  - RecordWildCards
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.

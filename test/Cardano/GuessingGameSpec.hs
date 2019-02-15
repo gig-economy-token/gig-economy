@@ -1,12 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Cardano.GuessingGameSpec (spec) where
 
-import Cardano.TestHelpers
+import Cardano.Helpers
 import Test.Hspec
 import qualified Wallet.Emulator as Emulator
 import Cardano.GameContract
 import Data.Either
 import qualified Data.Map as Map
+import Control.Monad
 
 spec :: Spec
 spec = do
@@ -78,3 +79,44 @@ spec = do
             result `shouldSatisfy` isRight
             getResultingFunds ws1 `shouldBe` 40
             getResultingFunds ws2 `shouldBe` 60
+
+        it "Multi-step play" $ do
+            -- multi-step prototype
+            let [w1, w2] = Emulator.Wallet <$> [1, 2]
+                initialTx = createMiningTransaction [(w1, 40), (w2, 60)]
+
+                trace :: Emulator.Trace Emulator.MockWallet ()
+                trace = do
+                        _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
+                        pure ()
+
+                simulateAndAssertFunds tr walls = do
+                  let (result, state) = Emulator.runTraceTxPool [initialTx] $ do
+                                              tr
+                  result `shouldSatisfy` isRight
+                  forM_ walls (\(w, funds) -> do
+                    let ws = Map.lookup w $ Emulator._walletStates state
+                    getResultingFunds <$> ws `shouldBe` Just funds)
+                  
+            simulateAndAssertFunds trace [(w1, 40), (w2, 60)]
+
+            -- Create a new trace and save it to the global variable
+            let trace2 = do
+                          trace
+                          _ <- Emulator.walletAction w1 $ startGame
+                          _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
+                          _ <- Emulator.walletAction w2 $ lock "asdf" 4
+                          _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
+                          pure ()
+                          
+            simulateAndAssertFunds trace2 [(w1, 40), (w2, 56)]
+
+            -- Create a new trace and save it to the global variable
+            let trace3 = do
+                          trace2
+                          _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
+                          _ <- Emulator.walletAction w1 $ guess "asdf"
+                          _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
+                          pure ()
+                          
+            simulateAndAssertFunds trace3 [(w1, 44), (w2, 56)]

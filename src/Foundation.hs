@@ -26,6 +26,8 @@ import qualified Yesod.Core.Unsafe as Unsafe
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
 
+import Cardano.Emulator
+
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
 -- starts running, such as database connections. Every handler will have
@@ -36,6 +38,7 @@ data App = App
     , appConnPool    :: ConnectionPool -- ^ Database connection pool.
     , appHttpManager :: Manager
     , appLogger      :: Logger
+    , simulatedChain :: IORef SimulatedChain
     }
 
 data MenuItem = MenuItem
@@ -102,7 +105,6 @@ instance Yesod App where
         master <- getYesod
         mmsg <- getMessage
 
-        muser <- maybeAuthPair
         mcurrentRoute <- getCurrentRoute
 
         -- Get the breadcrumbs, as defined in the YesodBreadcrumbs instance.
@@ -116,19 +118,19 @@ instance Yesod App where
                     , menuItemAccessCallback = True
                     }
                 , NavbarLeft $ MenuItem
-                    { menuItemLabel = "Profile"
-                    , menuItemRoute = ProfileR
-                    , menuItemAccessCallback = isJust muser
+                    { menuItemLabel = "Simulated Blockchain Status"
+                    , menuItemRoute = BlockchainStatusR
+                    , menuItemAccessCallback = True
                     }
                 , NavbarRight $ MenuItem
-                    { menuItemLabel = "Login"
-                    , menuItemRoute = AuthR LoginR
-                    , menuItemAccessCallback = isNothing muser
+                    { menuItemLabel = "Player 1"
+                    , menuItemRoute = Player1R
+                    , menuItemAccessCallback = True
                     }
                 , NavbarRight $ MenuItem
-                    { menuItemLabel = "Logout"
-                    , menuItemRoute = AuthR LogoutR
-                    , menuItemAccessCallback = isJust muser
+                    { menuItemLabel = "Player 2"
+                    , menuItemRoute = Player2R
+                    , menuItemAccessCallback = True
                     }
                 ]
 
@@ -160,16 +162,7 @@ instance Yesod App where
         -> Bool       -- ^ Whether or not this is a "write" request.
         -> Handler AuthResult
     -- Routes not requiring authentication.
-    isAuthorized (AuthR _) _ = return Authorized
-    isAuthorized CommentR _ = return Authorized
-    isAuthorized HomeR _ = return Authorized
-    isAuthorized FaviconR _ = return Authorized
-    isAuthorized RobotsR _ = return Authorized
-    isAuthorized (StaticR _) _ = return Authorized
-
-    -- the profile route requires that the user is authenticated, so we
-    -- delegate to that function
-    isAuthorized ProfileR _ = isAuthenticated
+    isAuthorized _ _ = pure Authorized
 
     -- This function creates static content files in the static folder
     -- and names them based on a hash of their content. This allows

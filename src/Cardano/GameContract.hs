@@ -4,6 +4,7 @@
 {-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE FlexibleContexts     #-}
 module Cardano.GameContract (
     lock,
     guess,
