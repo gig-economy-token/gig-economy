@@ -10,6 +10,7 @@ import qualified Data.Set as Set
 
 import Cardano.GameContract
 import qualified Ledger
+import Ledger.Ada
 import qualified Ledger.Interval as Interval
 import qualified Wallet.Emulator as Emulator
 
@@ -28,7 +29,7 @@ someOperation = do
   let [w1, w2] = Emulator.Wallet <$> [1, 2]
   tx0 <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
   tx1 <- Emulator.walletAction w1 $ startGame
-  tx2 <- Emulator.walletAction w2 $ lock "asdf" 4
+  tx2 <- Emulator.walletAction w2 $ lock "asdf" (adaValueOf 4)
   pure $ [tx0, tx1, tx2]
 
 -- Sample mining transaction that fills wallet 1 and 2 with some nano ADA
@@ -38,17 +39,17 @@ sampleTransaction = Ledger.Tx
   , Ledger.txOutputs = [
             Ledger.TxOutOf
               { Ledger.txOutAddress = Ledger.pubKeyAddress pk1
-              , Ledger.txOutValue = Ledger.Value 40
+              , Ledger.txOutValue = adaValueOf 40
               , Ledger.txOutType = Ledger.PayToPubKey pk1
               },
             Ledger.TxOutOf
               { Ledger.txOutAddress = Ledger.pubKeyAddress pk2
-              , Ledger.txOutValue = Ledger.Value 60
+              , Ledger.txOutValue = adaValueOf 60
               , Ledger.txOutType = Ledger.PayToPubKey pk2
               }
   ]
-  , Ledger.txForge = Ledger.Value 100
-  , Ledger.txFee = Ledger.Value 0
+  , Ledger.txForge = adaValueOf 100
+  , Ledger.txFee = fromInt 0
   , Ledger.txValidRange = $$(Interval.always)
   }
   where

@@ -4,6 +4,7 @@ module Cardano.GuessingGameSpec (spec) where
 import Cardano.Helpers
 import Test.Hspec
 import qualified Wallet.Emulator as Emulator
+import Ledger.Ada
 import Cardano.GameContract
 import Data.Either
 import qualified Data.Map as Map
@@ -19,7 +20,7 @@ spec = do
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
                     _ <- Emulator.walletAction w1 $ startGame
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
-                    _ <- Emulator.walletAction w2 $ lock "asdf" 4
+                    _ <- Emulator.walletAction w2 $ lock "asdf" (adaValueOf 4)
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
                     _ <- Emulator.walletAction w1 $ guess "asdf"
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
@@ -39,7 +40,7 @@ spec = do
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
                     _ <- Emulator.walletAction w1 $ startGame
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
-                    _ <- Emulator.walletAction w2 $ lock "asdf" 4
+                    _ <- Emulator.walletAction w2 $ lock "asdf" (adaValueOf 4)
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
                     _ <- Emulator.walletAction w1 $ guess "blah"
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
@@ -61,7 +62,7 @@ spec = do
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
                     _ <- Emulator.walletAction w1 $ startGame
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
-                    _ <- Emulator.walletAction w2 $ lock "asdf" 4
+                    _ <- Emulator.walletAction w2 $ lock "asdf" (adaValueOf 4)
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
                     _ <- Emulator.walletAction w1 $ guess "blah"
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
@@ -91,8 +92,7 @@ spec = do
                         pure ()
 
                 simulateAndAssertFunds tr walls = do
-                  let (result, state) = Emulator.runTraceTxPool [initialTx] $ do
-                                              tr
+                  let (result, state) = Emulator.runTraceTxPool [initialTx] tr
                   result `shouldSatisfy` isRight
                   forM_ walls (\(w, funds) -> do
                     let ws = Map.lookup w $ Emulator._walletStates state
@@ -105,10 +105,10 @@ spec = do
                           trace
                           _ <- Emulator.walletAction w1 $ startGame
                           _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
-                          _ <- Emulator.walletAction w2 $ lock "asdf" 4
+                          _ <- Emulator.walletAction w2 $ lock "asdf" (adaValueOf 4)
                           _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
                           pure ()
-                          
+
             simulateAndAssertFunds trace2 [(w1, 40), (w2, 56)]
 
             -- Create a new trace and save it to the global variable
@@ -118,5 +118,5 @@ spec = do
                           _ <- Emulator.walletAction w1 $ guess "asdf"
                           _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
                           pure ()
-                          
+
             simulateAndAssertFunds trace3 [(w1, 44), (w2, 56)]

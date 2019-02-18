@@ -41,7 +41,7 @@ packages:
 extra-deps:
   # Last commit to master as 2019-01-29
 - git: git@github.com:input-output-hk/plutus.git
-  commit: 1c9d628596a21364957cb5565d464d0d62a00f8a
+  commit: 3ee263fdb4da11f0485628c00f0cccf37acfd493
   subdirs:
     - language-plutus-core
     - plutus-tx
@@ -50,6 +50,10 @@ extra-deps:
     - wallet-api
     - plutus-playground/plutus-playground-lib
     - plutus-use-cases
+
+- git: https://github.com/input-output-hk/cardano-crypto.git
+  commit: f5cecb6e424cc84f85b6a3e1f803517bb7b4cfb1
+
 - serialise-0.2.1.0
 - hint-0.9.0
 

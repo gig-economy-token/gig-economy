@@ -6,6 +6,7 @@ module Cardano.Helpers where
 import qualified Data.Set as Set
 
 import qualified Ledger
+import Ledger.Ada
 import qualified Ledger.Interval as Interval
 import qualified Wallet.Emulator as Emulator
 import qualified Data.Map as Map
@@ -16,8 +17,8 @@ createMiningTransaction :: [(Emulator.Wallet, Int)] -> Ledger.Tx
 createMiningTransaction wallets = Ledger.Tx
   { Ledger.txInputs = Set.empty
   , Ledger.txOutputs = outputs
-  , Ledger.txForge = Ledger.Value total
-  , Ledger.txFee = Ledger.Value 0
+  , Ledger.txForge = adaValueOf total
+  , Ledger.txFee = fromInt 0
   , Ledger.txValidRange = ($$(Interval.always))
   }
   where
@@ -26,7 +27,7 @@ createMiningTransaction wallets = Ledger.Tx
     mkTxOutOf :: (Emulator.Wallet, Int) -> Ledger.TxOut
     mkTxOutOf (n, q) = Ledger.TxOutOf
                         { Ledger.txOutAddress = Ledger.pubKeyAddress pk
-                        , Ledger.txOutValue = Ledger.Value q
+                        , Ledger.txOutValue = adaValueOf q
                         , Ledger.txOutType = Ledger.PayToPubKey pk
                         }
         where
@@ -35,4 +36,4 @@ createMiningTransaction wallets = Ledger.Tx
 -- Consolidates the results of a wallet from the emulator
 -- to a single number that we can assert easily
 getResultingFunds :: Emulator.WalletState -> Int
-getResultingFunds ws = Map.foldr (+) 0 $ (Ledger.getValue . Ledger.txOutValue) <$> view Emulator.ownFunds ws
+getResultingFunds ws = Map.foldr (+) 0 $ (toInt . fromValue . Ledger.txOutValue) <$> view Emulator.ownFunds ws
