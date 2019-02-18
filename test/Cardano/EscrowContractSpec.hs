@@ -4,6 +4,7 @@ module Cardano.EscrowContractSpec (spec) where
 import Cardano.Helpers
 import Test.Hspec
 import Ledger
+import Ledger.Ada
 import qualified Wallet.Emulator as Emulator
 import Cardano.EscrowContract
 import Data.Either
@@ -23,7 +24,7 @@ spec = do
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
                     _ <- Emulator.walletAction w2 $ watchSmartContract contractNo
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
-                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1234 (Value 100)
+                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1234 (adaValueOf 100)
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
                     _ <- Emulator.walletAction w2 $ withdrawADA contractNo 1234
                     _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock [w1, w2]
@@ -47,11 +48,11 @@ spec = do
                     update
                     _ <- Emulator.walletAction w2 $ watchSmartContract contractNo
                     update
-                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1235 (Value 100)
+                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1235 (adaValueOf 100)
                     update
                     _ <- Emulator.walletAction w2 $ withdrawADA contractNo 1235
                     update
-                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1234 (Value 100)
+                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1234 (adaValueOf 100)
                     update
                     _ <- Emulator.walletAction w2 $ withdrawADA contractNo 1234
                     update
@@ -75,9 +76,9 @@ spec = do
                     update
                     _ <- Emulator.walletAction w2 $ watchSmartContract contractNo
                     update
-                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1234 (Value 100)
+                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1234 (adaValueOf 100)
                     update
-                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1234 (Value 100)
+                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1234 (adaValueOf 100)
                     update
                     _ <- Emulator.walletAction w2 $ withdrawADA contractNo 1234
                     update
@@ -101,9 +102,9 @@ spec = do
                     update
                     _ <- Emulator.walletAction w2 $ watchSmartContract contractNo
                     update
-                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1235 (Value 100)
+                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1235 (adaValueOf 100)
                     update
-                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1234 (Value 100)
+                    _ <- Emulator.walletAction w1 $ depositADA contractNo 1234 (adaValueOf 100)
                     update
                     _ <- Emulator.walletAction w2 $ withdrawADA contractNo 1235
                     update
