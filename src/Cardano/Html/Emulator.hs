@@ -7,11 +7,15 @@ module Cardano.Html.Emulator
   , appendStepAndNotifyKnownWallets
   , appendStep
   , readEmulatorState
+  , readWatchedAddresses
+  , readWatchedAddresses'
   ) where
 
 import Import
 import Yesod.Core.Types
 import Wallet.Emulator
+import Wallet.Emulator.AddressMap
+import qualified Data.Map as Map
 
 import Cardano.Emulator
 
@@ -27,6 +31,22 @@ instance HasSimulatedChain Handler where
 
 readEmulatorState :: HasSimulatedChain m => m EmulatorState
 readEmulatorState = scEmulatorState <$> readSimulatedChain
+
+-- The emulator does not offer the watchedAddresses endpoint
+-- but it's offered by the WalletAPI,
+-- so it's morally right to expose watched addresses because
+-- it is expected to be available on the real chain and real wallets.
+readWatchedAddresses :: HasSimulatedChain m => Wallet -> m AddressMap
+readWatchedAddresses w = do
+                          emState <- readEmulatorState
+                          pure (readWatchedAddresses' emState w)
+
+readWatchedAddresses' :: EmulatorState -> Wallet -> AddressMap
+readWatchedAddresses' emState w = _addressMap walletState
+  where
+    ws = _walletStates emState
+    walletState :: WalletState
+    walletState = fromMaybe (emptyWalletState w) (Map.lookup w ws)
 
 appendStep :: HasSimulatedChain m => Trace MockWallet () -> m ()
 appendStep newStep = modifySimulatedChain f

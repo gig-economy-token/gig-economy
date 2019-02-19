@@ -8,14 +8,17 @@
 
 module Cardano.Html.Template.Instances where
 
-import Data.Coerce
 import Import hiding (Value)
 import Ledger
 import Wallet.API
 import Ledger.Ada.TH
 import Ledger.Value.TH
 import Text.Blaze.Html (ToMarkup(..), Html)
-import Codec.Serialise
+--import Codec.Serialise
+--import Data.Aeson (toJSON)
+import qualified Language.PlutusCore as PLC
+import Unsafe.Coerce (unsafeCoerce)
+--import Language.PlutusTx.Evaluation (evaluateCekTrace)
 
 instance ToMarkup Slot where
   toMarkup (Slot x) = toMarkup $ "Slot " <> show x
@@ -45,8 +48,17 @@ instance ToMarkup TxOutType where
   toMarkup (PayToPubKey pk) = "Pay to " <> (toMarkup pk)
   toMarkup (PayToScript datascript) = "Pay to script " <> (toMarkup datascript)
 
+type UnderlyingScript = PLC.Program PLC.TyName PLC.Name ()
+
+instance ToMarkup Script where
+  toMarkup s = toMarkup prettyScript
+    where
+      prettyScript = show {-$ evaluateCekTrace-} uScript
+      uScript :: UnderlyingScript
+      uScript = unsafeCoerce s
+
 instance ToMarkup DataScript where
-  toMarkup (DataScript datascript) = "DataScript " <> (toMarkup (show $ serialise datascript))
+  toMarkup (DataScript datascript) = "DataScript " <> toMarkup datascript
 
 showAddr :: Show a => a -> String
 showAddr a = (take 10 $ show a) <> "..."
@@ -61,7 +73,7 @@ instance ToMarkup TxOut where
   toMarkup TxOutOf {..} = "TxOut " <> toMarkup txOutType <> " - " <> toMarkup txOutValue <> " - " <> toMarkup txOutAddress
 
 instance ToMarkup TxIn where
-  toMarkup TxInOf {..} = "TxIn from " <> toMarkup txInRef <> " - " <> toMarkup (show txInType)
+  toMarkup TxInOf {..} = "TxIn from " <> toMarkup txInRef <> " - " <> toMarkup txInType
 
 instance ToMarkup TxId where
   toMarkup (TxIdOf x) = "TxId " <> toMarkup (showAddr x)
@@ -72,6 +84,12 @@ instance ToMarkup SlotRange where
       from = fromMaybe "-∞" (toMarkup <$> f)
       to = fromMaybe "∞" (toMarkup <$> t)
 
---instance ToMarkup TxInType where
---  toMarkup (ConsumeScriptAddress a b) = "ConsumeScriptTxIn " <> toMarkup txInRef <> " - " <> toMarkup txInType
---  toMarkup (ConsumePublicKeyAddress sig) = "ConsumePublicKeyAddress " <> toMarkup (show sig)
+instance ToMarkup TxInType where
+  toMarkup (ConsumePublicKeyAddress sig) = "ConsumePublicKeyAddress " <> toMarkup (show sig)
+  toMarkup (ConsumeScriptAddress a b) = "ConsumeScriptTxIn " <> toMarkup a <> " - " <> toMarkup b
+
+instance ToMarkup ValidatorScript where
+  toMarkup (ValidatorScript s) = "ValidatorScript " <> toMarkup s
+
+instance ToMarkup RedeemerScript where
+  toMarkup (RedeemerScript s) = "RedeemerScript " <> toMarkup s
