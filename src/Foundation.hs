@@ -132,6 +132,16 @@ instance Yesod App where
                     , menuItemRoute = Player2R
                     , menuItemAccessCallback = True
                     }
+                , NavbarRight $ MenuItem
+                    { menuItemLabel = "Employer"
+                    , menuItemRoute = EmployerR
+                    , menuItemAccessCallback = True
+                    }
+                , NavbarRight $ MenuItem
+                    { menuItemLabel = "Employee"
+                    , menuItemRoute = EmployeeR
+                    , menuItemAccessCallback = True
+                    }
                 ]
 
         let navbarLeftMenuItems = [x | NavbarLeft x <- menuItems]

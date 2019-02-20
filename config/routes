@@ -18,6 +18,12 @@
 /player2 Player2R GET
 /player2/lock Player2LockR POST
 
+/job/employer EmployerR GET
+/job/employer/postOffer EmployerPostOfferR POST
+
+/job/employee EmployeeR GET
+/job/employee/acceptOffer EmployeeAcceptOfferR POST
+
 /comments CommentR POST
 
 /profile ProfileR GET

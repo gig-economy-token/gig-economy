@@ -47,6 +47,8 @@ import Handler.Profile
 import Handler.BlockchainStatus
 import Handler.GuessingGame.Player1
 import Handler.GuessingGame.Player2
+import Handler.Job.Employer
+import Handler.Job.Employee
 import qualified Cardano.Emulator as Emulator
 
 -- This line actually creates our YesodDispatch instance. It is the second half
