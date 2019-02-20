@@ -14,3 +14,7 @@ getEmployeeR = do
 postEmployeeAcceptOfferR :: Handler Html
 postEmployeeAcceptOfferR = do
               renderLayout
+
+postEmployeeSubscribeR :: Handler Html
+postEmployeeSubscribeR = do
+              renderLayout
