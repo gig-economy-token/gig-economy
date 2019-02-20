@@ -21,6 +21,5 @@ postEmployeeAcceptOfferR = do
 
 postEmployeeSubscribeR :: Handler Html
 postEmployeeSubscribeR = do
-          putStrLn "ASDFADSFDSAFSDAFASDF"
           appendStep $ (walletAction employeeWallet subscribeToJobBoard)
           renderLayout
