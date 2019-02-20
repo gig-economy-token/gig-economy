@@ -48,24 +48,24 @@ readWatchedAddresses' emState w = _addressMap walletState
     walletState :: WalletState
     walletState = fromMaybe (emptyWalletState w) (Map.lookup w ws)
 
-appendStep :: HasSimulatedChain m => Trace MockWallet () -> m ()
+appendStep :: HasSimulatedChain m => Trace MockWallet a -> m ()
 appendStep newStep = modifySimulatedChain f
   where
     f sc = sc'
       where
         prevTrace = scTrace sc
-        newTrace = prevTrace >> newStep
+        newTrace = prevTrace >> (newStep >> pure ())
         (_, newEmulatorState) = runTraceTxPool initialTx newTrace
         sc' = SimulatedChain
                 { scEmulatorState = newEmulatorState
                 , scTrace = newTrace
                 }
 
-appendStepAndNotifyKnownWallets :: HasSimulatedChain m => Trace MockWallet () -> m ()
+appendStepAndNotifyKnownWallets :: HasSimulatedChain m => Trace MockWallet a -> m ()
 appendStepAndNotifyKnownWallets newStep = appendStep stepAndNotify
   where
     stepAndNotify = do
-                    newStep
+                    _ <- newStep
                     _ <- processPending >>= walletsNotifyBlock allKnownWallets
                     pure ()
 
