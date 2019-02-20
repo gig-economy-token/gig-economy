@@ -11,7 +11,6 @@ import qualified Cardano.Html.Template as CardanoHtml
 getBlockchainStatusR :: Handler Html
 getBlockchainStatusR = do
     emulatorState <- CardanoHtml.readEmulatorState
-    print $ Emulator.fundsDistribution emulatorState
     defaultLayout $ do
         setTitle "Emulated blockchain status"
         let
