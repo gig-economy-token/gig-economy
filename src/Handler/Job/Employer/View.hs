@@ -7,7 +7,7 @@ module Handler.Job.Employer.View
 
 import Import
 
-renderLayout :: Handler Html
-renderLayout = do
+renderLayout :: (Widget, Enctype) -> Handler Html
+renderLayout (postOfferForm, postOfferEnctype) = do
     defaultLayout $ do
         $(widgetFile "job/employer")

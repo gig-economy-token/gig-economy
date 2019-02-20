@@ -3,4 +3,9 @@
         <div .row>
             <div .col-lg-12>
                 <div .page-header>
-                    <h1 #start>Employer
+                    <h1>Employer
+
+                    <h2>Actions
+                    <form method=POST action=@{EmployerPostOfferR} enctype=#{postOfferEnctype}>
+                      ^{postOfferForm}
+                      <button .btn.btn-primary.form-control type="submit">Submit job offer
