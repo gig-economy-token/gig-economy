@@ -16,9 +16,8 @@ import Ledger.Value.TH
 import Text.Blaze.Html (ToMarkup(..), Html)
 --import Codec.Serialise
 --import Data.Aeson (toJSON)
-import qualified Language.PlutusCore as PLC
-import Unsafe.Coerce (unsafeCoerce)
 --import Language.PlutusTx.Evaluation (evaluateCekTrace)
+import Cardano.ScriptMagic
 
 instance ToMarkup Slot where
   toMarkup (Slot x) = toMarkup $ "Slot " <> show x
@@ -48,14 +47,10 @@ instance ToMarkup TxOutType where
   toMarkup (PayToPubKey pk) = "Pay to " <> (toMarkup pk)
   toMarkup (PayToScript datascript) = "Pay to script " <> (toMarkup datascript)
 
-type UnderlyingScript = PLC.Program PLC.TyName PLC.Name ()
-
 instance ToMarkup Script where
   toMarkup s = toMarkup prettyScript
     where
-      prettyScript = show {-$ evaluateCekTrace-} uScript
-      uScript :: UnderlyingScript
-      uScript = unsafeCoerce s
+      prettyScript = show {-$ evaluateCekTrace-} (scriptToUnderlyingScript s)
 
 instance ToMarkup DataScript where
   toMarkup (DataScript datascript) = "DataScript " <> toMarkup datascript

@@ -4,6 +4,7 @@
             <div .col-lg-12>
                 <div .page-header>
                     <h1>Employee
+                    #{jobBoard}
                     <h2>Actions
                     <h3>Subscribe to job board
                     <form method=POST action=@{EmployeeSubscribeR}>

@@ -8,6 +8,8 @@ module Cardano.JobContract
   , subscribeToJobBoard
   , JobOffer(..)
   , JobAcceptance(..)
+  , jobBoardAddress
+  , readJobOffer
   ) where
 
 import qualified Language.PlutusTx            as PlutusTx
@@ -15,6 +17,11 @@ import qualified Language.PlutusTx            as PlutusTx
 import           Ledger
 import           Ledger.Validation
 import           Wallet
+import Language.PlutusTx.Evaluation (evaluateCekTrace)
+import Language.PlutusCore.Evaluation.Result (EvaluationResult, EvaluationResultF(..))
+import Language.PlutusCore (Term(..), Constant(..))
+import Unsafe.Coerce
+import Cardano.ScriptMagic
 
 import           Data.ByteString.Lazy (ByteString)
 --import qualified Data.ByteString.Lazy.Char8   as C
@@ -23,7 +30,7 @@ import           Data.ByteString.Lazy (ByteString)
 data JobOffer = JobOffer
   { joDescription :: ByteString
   , joPayout      :: Int
-  }
+  } deriving Show
 PlutusTx.makeLift ''JobOffer
 
 -- Datatype for accepting a job offer
@@ -55,3 +62,23 @@ acceptOffer acceptance = do
 
 subscribeToJobBoard :: WalletAPI m => m ()
 subscribeToJobBoard = startWatching jobBoardAddress
+
+readJobOffer :: DataScript -> Maybe JobOffer
+readJobOffer ds = JobOffer <$> desc <*> payout
+  where
+    desc = getBS $ evaluateCekTrace (scriptToUnderlyingScript (readDesc `applyScript` ds'))
+    payout = getInt $ evaluateCekTrace (scriptToUnderlyingScript (readPayout `applyScript` ds'))
+
+    getBS :: (a, EvaluationResult) -> Maybe ByteString
+    getBS (_, EvaluationSuccess (Constant _ (BuiltinBS _ _ x))) = Just x
+    getBS _ = Nothing
+
+    getInt :: (a, EvaluationResult) -> Maybe Int
+    getInt (_, EvaluationSuccess (Constant _ (BuiltinInt _ _ x))) = Just (fromIntegral x)
+    getInt _ = Nothing
+
+    ds' :: Script
+    ds' = unsafeCoerce ds
+
+    readDesc = $$(Ledger.compileScript [|| \(JobOffer {joDescription}) -> joDescription ||]) 
+    readPayout = $$(Ledger.compileScript [|| \(JobOffer {joPayout}) -> joPayout ||]) 
