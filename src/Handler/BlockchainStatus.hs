@@ -4,7 +4,6 @@ module Handler.BlockchainStatus where
 
 import Import
 
-import qualified Wallet.Emulator as Emulator
 import qualified Cardano.Html.Emulator as CardanoHtml
 import qualified Cardano.Html.Template as CardanoHtml
 
