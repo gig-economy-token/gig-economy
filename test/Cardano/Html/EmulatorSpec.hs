@@ -9,6 +9,7 @@ import Cardano.Html.Emulator
 import Data.IORef
 import qualified Wallet.Emulator.Types as Emulator
 import qualified Ledger
+import Control.Monad (forM_)
 
 newtype MockEmulator a = MockEmulator { runMockEmulator :: IORef SimulatedChain -> IO a }
     deriving Functor
@@ -38,13 +39,19 @@ spec = do
       Emulator._chainNewestFirst es `shouldBe` []
       Emulator._emulatorLog es `shouldBe` []
 
-    it "appendStepAndNotify >> readEmulatorState generates a single block" $ do
+    it "appendStepAndNotify >> readEmulatorState generates a single extra block" $ do
       ref <- newIORef emptySimulatedChain
       es <- runMockEmulator (appendStepAndNotifyKnownWallets (pure ()) >> readEmulatorState) ref
+      -- Single block in the blockchain
       (length $ Emulator._chainNewestFirst es) `shouldBe` 1
-      (length $ Emulator._emulatorLog es) `shouldBe` 2
+
+      -- log entries = 1 from appendStepAndNotify + n from initialTx
+      (length $ Emulator._emulatorLog es) `shouldBe` 1 + length initialTx
+      -- the first entry is from appendStepAndNotify
       (Emulator._emulatorLog es !! 0) `shouldBe` Emulator.SlotAdd (Ledger.Slot 1)
-      (Emulator._emulatorLog es !! 1) `shouldSatisfy` isTxnValidate
+      -- The other entries are from initialTx
+      forM_ [1..length initialTx] $ \pos -> do
+        (Emulator._emulatorLog es !! pos) `shouldSatisfy` isTxnValidate
 
 isTxnValidate :: Emulator.EmulatorEvent -> Bool
 isTxnValidate (Emulator.TxnValidate _) = True

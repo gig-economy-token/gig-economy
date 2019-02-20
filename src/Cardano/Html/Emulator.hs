@@ -54,7 +54,7 @@ appendStep newStep = modifySimulatedChain f
     f sc = sc'
       where
         prevTrace = scTrace sc
-        newTrace = prevTrace >> (newStep >> pure ())
+        newTrace = void $ prevTrace >> newStep
         (_, newEmulatorState) = runTraceTxPool initialTx newTrace
         sc' = SimulatedChain
                 { scEmulatorState = newEmulatorState
