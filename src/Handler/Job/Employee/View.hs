@@ -9,7 +9,6 @@ import Wallet.Emulator.AddressMap
 import Cardano.JobContract
 import Cardano.Emulator.Job
 import Cardano.Html.Emulator
---import Cardano.Html.Template
 import Cardano.Html.Template.Instances ()
 import Text.Blaze.Html (ToMarkup(..), Html)
 import qualified Data.Map as Map
@@ -27,6 +26,7 @@ instance ToMarkup JobBoard where
   toMarkup (JobBoard (AddressMap am)) =
       case Map.lookup jobBoardAddress am of
           Nothing -> "You are not subscribed yet!"
+          Just x | x == Map.empty -> "No offers have been posted yet."
           Just tx -> renderBoard tx
 
 renderBoard :: Map.Map TxOutRef TxOut -> Html

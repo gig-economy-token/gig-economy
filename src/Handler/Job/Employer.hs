@@ -7,7 +7,6 @@ module Handler.Job.Employer
 import Import
 
 import Handler.Job.Employer.View
---import Cardano.Html.Emulator
 import Yesod.Form.Bootstrap3
 import Cardano.JobContract
 import Cardano.Emulator.Job
