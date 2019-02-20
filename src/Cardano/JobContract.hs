@@ -13,18 +13,15 @@ module Cardano.JobContract
   ) where
 
 import qualified Language.PlutusTx            as PlutusTx
---import qualified Language.PlutusTx.Prelude    as P
 import           Ledger
 import           Ledger.Validation
 import           Wallet
 import Language.PlutusTx.Evaluation (evaluateCekTrace)
 import Language.PlutusCore.Evaluation.Result (EvaluationResult, EvaluationResultF(..))
 import Language.PlutusCore (Term(..), Constant(..))
-import Unsafe.Coerce
 import Cardano.ScriptMagic
 
 import           Data.ByteString.Lazy (ByteString)
---import qualified Data.ByteString.Lazy.Char8   as C
 
 -- Datatype for posting job offers
 data JobOffer = JobOffer
@@ -78,7 +75,7 @@ readJobOffer ds = JobOffer <$> desc <*> payout
     getInt _ = Nothing
 
     ds' :: Script
-    ds' = unsafeCoerce ds
+    ds' = getDataScript ds
 
     readDesc = $$(Ledger.compileScript [|| \(JobOffer {joDescription}) -> joDescription ||]) 
     readPayout = $$(Ledger.compileScript [|| \(JobOffer {joPayout}) -> joPayout ||]) 

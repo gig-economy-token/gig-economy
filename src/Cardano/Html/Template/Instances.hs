@@ -14,9 +14,6 @@ import Wallet.API
 import Ledger.Ada.TH
 import Ledger.Value.TH
 import Text.Blaze.Html (ToMarkup(..), Html)
---import Codec.Serialise
---import Data.Aeson (toJSON)
---import Language.PlutusTx.Evaluation (evaluateCekTrace)
 import Cardano.ScriptMagic
 
 instance ToMarkup Slot where
@@ -50,7 +47,7 @@ instance ToMarkup TxOutType where
 instance ToMarkup Script where
   toMarkup s = toMarkup prettyScript
     where
-      prettyScript = show {-$ evaluateCekTrace-} (scriptToUnderlyingScript s)
+      prettyScript = show (scriptToUnderlyingScript s)
 
 instance ToMarkup DataScript where
   toMarkup (DataScript datascript) = "DataScript " <> toMarkup datascript

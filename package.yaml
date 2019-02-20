@@ -54,7 +54,6 @@ dependencies:
 - servant-client
 - http-client
 - blaze-html
-- serialise
 
 ghc-options:
 - -Wall
