@@ -5,17 +5,22 @@
 {-# LANGUAGE DeriveGeneric        #-}
 module Cardano.JobContract
   ( postOffer
+--  , closeOffer
   , acceptOffer
   , subscribeToJobBoard
+  , subscribeToJobAcceptanceBoard
   , JobOffer(..)
   , JobAcceptance(..)
   , jobBoardAddress
+  , jobAddress
   , parseJobOffer
+  , parseJobAcceptance
   ) where
 
 import qualified Language.PlutusTx            as PlutusTx
 import           Ledger
-import           Ledger.Validation
+import           Ledger.Ada.TH as Ada
+import qualified Ledger.Validation as Validation
 import           Wallet
 import Language.PlutusTx.Evaluation (evaluateCekTrace)
 import Language.PlutusCore.Evaluation.Result (EvaluationResult, EvaluationResultF(..))
@@ -37,31 +42,88 @@ PlutusTx.makeLift ''JobOffer
 data JobAcceptance = JobAcceptance
   { jaAcceptor    :: ByteString
   }
+  deriving (Show, Eq, Generic)
 PlutusTx.makeLift ''JobAcceptance
 
-jobValidator :: ValidatorScript
-jobValidator = ValidatorScript ($$(Ledger.compileScript [||
-    \(JobAcceptance {}) (JobOffer {}) (_ :: PendingTx) ->
+-- Job board:
+-- anyone can post a JobOffer here,
+-- and only whoever posts the offer can close it.
+-- () -> JobOffer {} -> PendingTx -> ()
+jobBoard :: ValidatorScript
+jobBoard = ValidatorScript ($$(Ledger.compileScript [||
+  \() (JobOffer {}) (t :: Validation.PendingTx) ->
+    let
+        adaValueIn :: Value -> Int
+        adaValueIn v = $$(Ada.toInt) ($$(Ada.fromValue) v)
+    in
 
+    let Validation.PendingTx {
+          pendingTxInputs=[
+            txin@Validation.PendingTxIn {
+              pendingTxInValue=val
+            }
+          ],
+          pendingTxOutputs=[
+            Validation.PendingTxOut {
+              pendingTxOutValue=val',
+              pendingTxOutData=Validation.PubKeyTxOut pubkey
+            }
+          ]
+        } = t
+        valueIsSame = $$(PlutusTx.eq) (adaValueIn val) (adaValueIn val')
+        inSignerIsSameAsOutSigner = $$(Validation.txInSignedBy) txin pubkey
+    in
+    if ($$(PlutusTx.and) valueIsSame inSignerIsSameAsOutSigner)
+    then ()
+    else $$(PlutusTx.error)
+    
     ()  -- FIXME: We don't validate anything!
+  ||]))
 
-    ||]))
+-- Job acceptance board
+-- JobOffer -> (() -> JobAcceptance -> PendingTx -> ())
+-- We `scriptApply` a JobOffer to obtain a single unique job address
+-- Validation: It can only be closed by a transaction signed by the offerer
+-- XXX: Shall we do the escrow here?? Maybe providing oracles.
+jobAcceptanceBoard :: ValidatorScript
+jobAcceptanceBoard = ValidatorScript ($$(Ledger.compileScript [||
+  \(_ :: JobOffer) () (_ :: JobAcceptance) (_ :: Validation.PendingTx) ->
+    ()
+  ||]))
 
 jobBoardAddress :: Address
-jobBoardAddress = Ledger.scriptAddress jobValidator
+jobBoardAddress = Ledger.scriptAddress jobBoard
 
-postOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> Value -> m ()
-postOffer offer vl = do
+jobAddress :: JobOffer -> Address
+jobAddress jobOffer = Ledger.scriptAddress (ValidatorScript sc)
+  where
+    sc = (getValidator jobAcceptanceBoard) `applyScript` (Ledger.lifted jobOffer)
+
+postOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> m ()
+postOffer offer = do
     let ds = DataScript (Ledger.lifted (offer))
-    payToScript_ defaultSlotRange jobBoardAddress vl ds
+    payToScript_ defaultSlotRange jobBoardAddress ($$(adaValueOf) 0) ds
 
-acceptOffer :: (WalletAPI m, WalletDiagnostics m) => JobAcceptance -> m ()
-acceptOffer acceptance = do
-    let redeemer = RedeemerScript (Ledger.lifted acceptance)
-    collectFromScript defaultSlotRange jobValidator redeemer
+{-
+closeOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> Value -> m ()
+closeOffer offer vl = do
+    let ds = DataScript (Ledger.lifted (offer))
+        inputs = Set.fromList
+        out = _
+    _ <- createTxAndSubmit defaultSlotRange inputs [out]
+    pure ()
+-}
+
+acceptOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> JobAcceptance -> m ()
+acceptOffer offer acceptance = do
+    let ds = DataScript (Ledger.lifted acceptance)
+    payToScript_ defaultSlotRange (jobAddress offer) ($$(adaValueOf) 0) ds
 
 subscribeToJobBoard :: WalletAPI m => m ()
 subscribeToJobBoard = startWatching jobBoardAddress
+
+subscribeToJobAcceptanceBoard :: WalletAPI m => JobOffer -> m ()
+subscribeToJobAcceptanceBoard offer = startWatching (jobAddress offer)
 
 parseJobOffer :: DataScript -> Maybe JobOffer
 parseJobOffer ds = JobOffer <$> desc <*> payout
@@ -82,3 +144,17 @@ parseJobOffer ds = JobOffer <$> desc <*> payout
 
     readDesc = $$(Ledger.compileScript [|| \(JobOffer {joDescription}) -> joDescription ||]) 
     readPayout = $$(Ledger.compileScript [|| \(JobOffer {joPayout}) -> joPayout ||]) 
+
+parseJobAcceptance :: DataScript -> Maybe JobAcceptance
+parseJobAcceptance ds = JobAcceptance <$> acceptor
+  where
+    acceptor = getBS $ evaluateCekTrace (scriptToUnderlyingScript (readAcceptor `applyScript` ds'))
+
+    getBS :: (a, EvaluationResult) -> Maybe ByteString
+    getBS (_, EvaluationSuccess (Constant _ (BuiltinBS _ _ x))) = Just x
+    getBS _ = Nothing
+
+    ds' :: Script
+    ds' = getDataScript ds
+
+    readAcceptor = $$(Ledger.compileScript [|| \(JobAcceptance {jaAcceptor}) -> jaAcceptor ||]) 

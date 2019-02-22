@@ -11,15 +11,19 @@ import Cardano.Emulator.Job
 import Handler.Job.Employee.View
 import Cardano.JobContract
 
+doOnBlockchain :: HasSimulatedChain m => MockWallet () -> m ()
+doOnBlockchain op = appendStepAndNotifyKnownWallets (walletAction employeeWallet op)
+
 getEmployeeR :: Handler Html
 getEmployeeR = do
           renderLayout
 
 postEmployeeAcceptOfferR :: Handler Html
 postEmployeeAcceptOfferR = do
+          --doOnBlockchain (acceptOffer (JobAcceptance { jaAcceptor = "John Doe" }))
           renderLayout
 
 postEmployeeSubscribeR :: Handler Html
 postEmployeeSubscribeR = do
-          appendStep $ (walletAction employeeWallet subscribeToJobBoard)
+          doOnBlockchain subscribeToJobBoard
           renderLayout

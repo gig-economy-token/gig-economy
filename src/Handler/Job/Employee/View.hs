@@ -23,25 +23,28 @@ renderLayout = do
 newtype JobBoard = JobBoard AddressMap
 
 instance ToMarkup JobBoard where
-  toMarkup (JobBoard (AddressMap am)) =
-      case Map.lookup jobBoardAddress am of
+  toMarkup jb =
+      case extractJobOffers jb of
           Nothing -> "You are not subscribed yet!"
-          Just x | x == Map.empty -> "No offers have been posted yet."
+          Just [] -> "No offers have been posted yet."
           Just tx -> renderBoard tx
 
-renderBoard :: Map.Map TxOutRef TxOut -> Html
-renderBoard tx' = [shamlet|
+renderBoard :: [JobOffer] -> Html
+renderBoard offers = [shamlet|
 <ul>
   $forall o <- offers
     <li>Offer: #{joPayout o} - #{B8.unpack $ joDescription o}
 |]
+
+extractJobOffers :: JobBoard -> Maybe [JobOffer]
+extractJobOffers (JobBoard (AddressMap am)) = do
+                                              addresses <- Map.lookup jobBoardAddress am
+                                              pure $ catMaybes $ parseOffer <$> Map.toList addresses
   where
-    offers :: [JobOffer]
-    offers = catMaybes $ parseOffer <$> Map.toList tx'
-    extractDataScript :: TxOutType -> Maybe DataScript
-    extractDataScript (PayToScript s) = Just s
-    extractDataScript _               = Nothing
     parseOffer :: (TxOutRef, TxOut) -> Maybe JobOffer
     parseOffer (_, tx) = do
                       ds <- extractDataScript (txOutType tx)
                       parseJobOffer ds
+    extractDataScript :: TxOutType -> Maybe DataScript
+    extractDataScript (PayToScript s) = Just s
+    extractDataScript _               = Nothing

@@ -13,7 +13,6 @@ import Cardano.Emulator.Job
 import Cardano.Html.Emulator
 import Wallet.Emulator
 import qualified Data.ByteString.Lazy.Char8 as B8
-import Ledger.Ada
 
 jobOfferForm :: Html -> MForm Handler (FormResult JobOffer, Widget)
 jobOfferForm = renderDivs $ JobOffer
@@ -36,7 +35,7 @@ postEmployerPostOfferR = do
   ((result, widget), enctype) <- runFormPost jobOfferForm
   case result of
     FormSuccess job -> do
-        appendStepAndNotifyKnownWallets (walletAction employerWallet (postOffer job (adaValueOf 1)))
+        appendStepAndNotifyKnownWallets (walletAction employerWallet (postOffer job))
         renderLayout (widget, enctype)
     FormMissing -> renderLayout (widget, enctype)
     FormFailure _ -> renderLayout (widget, enctype)
