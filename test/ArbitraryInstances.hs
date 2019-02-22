@@ -11,6 +11,7 @@ import qualified Data.ByteString.Lazy.Char8 as B8
 
 instance Arbitrary JobOffer where
   arbitrary = genericArbitrary
+  shrink = genericShrink
 
 instance Arbitrary B8.ByteString where
   arbitrary = B8.pack <$> genericArbitrary
