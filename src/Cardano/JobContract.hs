@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE DeriveGeneric        #-}
 module Cardano.JobContract
   ( postOffer
   , acceptOffer
@@ -9,7 +10,7 @@ module Cardano.JobContract
   , JobOffer(..)
   , JobAcceptance(..)
   , jobBoardAddress
-  , readJobOffer
+  , parseJobOffer
   ) where
 
 import qualified Language.PlutusTx            as PlutusTx
@@ -20,6 +21,7 @@ import Language.PlutusTx.Evaluation (evaluateCekTrace)
 import Language.PlutusCore.Evaluation.Result (EvaluationResult, EvaluationResultF(..))
 import Language.PlutusCore (Term(..), Constant(..))
 import Cardano.ScriptMagic
+import GHC.Generics
 
 import           Data.ByteString.Lazy (ByteString)
 
@@ -27,7 +29,8 @@ import           Data.ByteString.Lazy (ByteString)
 data JobOffer = JobOffer
   { joDescription :: ByteString
   , joPayout      :: Int
-  } deriving Show
+  }
+  deriving (Show, Eq, Generic)
 PlutusTx.makeLift ''JobOffer
 
 -- Datatype for accepting a job offer
@@ -60,8 +63,8 @@ acceptOffer acceptance = do
 subscribeToJobBoard :: WalletAPI m => m ()
 subscribeToJobBoard = startWatching jobBoardAddress
 
-readJobOffer :: DataScript -> Maybe JobOffer
-readJobOffer ds = JobOffer <$> desc <*> payout
+parseJobOffer :: DataScript -> Maybe JobOffer
+parseJobOffer ds = JobOffer <$> desc <*> payout
   where
     desc = getBS $ evaluateCekTrace (scriptToUnderlyingScript (readDesc `applyScript` ds'))
     payout = getInt $ evaluateCekTrace (scriptToUnderlyingScript (readPayout `applyScript` ds'))

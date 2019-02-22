@@ -44,4 +44,4 @@ renderBoard tx' = [shamlet|
     parseOffer :: (TxOutRef, TxOut) -> Maybe JobOffer
     parseOffer (_, tx) = do
                       ds <- extractDataScript (txOutType tx)
-                      readJobOffer ds
+                      parseJobOffer ds
