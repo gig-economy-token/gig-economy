@@ -7,18 +7,30 @@ module Handler.Job.Employer.View
 
 import Import
 import Cardano.JobContract
-import Wallet.Emulator.AddressMap (AddressMap(..))
 import Cardano.Emulator.Job
 import Cardano.Html.Emulator
+import Handler.Job.Forms
 
 renderLayout :: (Widget, Enctype) -> Handler Html
 renderLayout (postOfferForm, postOfferEnctype) = do
-    acceptanceListing <- mkAcceptanceMap <$> readWatchedAddresses employerWallet
+    acceptanceListing <- mkAcceptanceListing
     defaultLayout $ do
         $(widgetFile "job/employer")
 
-mkAcceptanceMap :: AddressMap -> [(JobOffer, [JobAcceptance])]
-mkAcceptanceMap am = offersAcceptances
-  where
-    offers = fromMaybe [] $ extractJobOffers am
-    offersAcceptances = (\o -> (o, fromMaybe [] $ extractJobAcceptances am o)) <$> offers
+data JobEntry = JobEntry
+  { jeOffer :: JobOffer
+  , jeForm :: (Widget, Enctype)
+  , jeAcceptances :: [JobAcceptance]
+  }
+
+mkAcceptanceListing :: Handler [JobEntry]
+mkAcceptanceListing = do
+                        am <- readWatchedAddresses employerWallet
+                        let offers = fromMaybe [] $ extractJobOffers am
+                        forM offers $ \offer -> do
+                              (widget, enctype) <- generateFormPost (hiddenJobOfferForm (Just offer))
+                              pure JobEntry
+                                    { jeOffer = offer
+                                    , jeForm = (widget, enctype)
+                                    , jeAcceptances = fromMaybe [] $ extractJobAcceptances am offer
+                                    }

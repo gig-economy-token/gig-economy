@@ -9,12 +9,15 @@
               No jobs posted yet.
             $of xs
               <ul>
-                $forall (offer, acceptances) <- xs
+                $forall offer <- xs
                   <li>
-                    #{show offer}
+                    #{show $ jeOffer offer}
                     <ul>
-                      $forall a <- acceptances
+                      $forall a <- jeAcceptances offer
                         <li>#{show a}
+                    <form method=POST action=@{EmployerCloseOfferR} enctype=#{snd $ jeForm offer}>
+                      ^{fst $ jeForm offer}
+                      <button .btn.btn-danger.form-control type="submit">Close job offer
 
           <h2>Actions
           <form method=POST action=@{EmployerPostOfferR} enctype=#{postOfferEnctype}>
