@@ -1,19 +1,19 @@
 <div .container>
-    <div .bs-docs-section>
-        <div .row>
-            <div .col-lg-12>
-                <div .page-header>
-                    <h1>Employee
-                    $case offers
-                      $of Nothing
-                        <p>You are not subscribed yet!
-                          <form method=POST action=@{EmployeeSubscribeR}>
-                            <button .btn.btn-primary.form-control type="submit">Subscribe to job board
-                      $of Just (JobBoard [])
-                        <p>No offers yet
-                      $of Just (JobBoard ofs)
-                        $forall (o, (w, e)) <- ofs
-                          <form method=POST action=@{EmployeeAcceptOfferR} enctype=#{e}>
-                            ^{w}
-                            Offer: #{show o}
-                            <button .btn.btn-primary type="submit">Accept offer
+  <div .bs-docs-section>
+    <div .row>
+      <div .col-lg-12>
+        <div .page-header>
+          <h1>Employee
+          $case offers
+            $of Nothing
+              <p>You are not subscribed yet!
+                <form method=POST action=@{EmployeeSubscribeR}>
+                  <button .btn.btn-primary.form-control type="submit">Subscribe to job board
+            $of Just (JobBoard [])
+              <p>No offers yet
+            $of Just (JobBoard ofs)
+              $forall (o, (w, e)) <- ofs
+                <form method=POST action=@{EmployeeAcceptOfferR} enctype=#{e}>
+                  ^{w}
+                  Offer: #{show o}
+                  <button .btn.btn-primary type="submit">Accept offer

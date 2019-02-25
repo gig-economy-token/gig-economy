@@ -2,6 +2,7 @@
 module Handler.Job.Employer
   ( getEmployerR
   , postEmployerPostOfferR
+  , postEmployerCloseOfferR
   ) where
 
 import Import
@@ -43,3 +44,6 @@ postEmployerPostOfferR = do
         renderLayout (widget, enctype)
     FormMissing -> renderLayout (widget, enctype)
     FormFailure _ -> renderLayout (widget, enctype)
+
+postEmployerCloseOfferR :: Handler Html
+postEmployerCloseOfferR = error "FIXME"
