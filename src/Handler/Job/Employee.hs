@@ -16,12 +16,17 @@ doOnBlockchain op = appendStepAndNotifyKnownWallets (walletAction employeeWallet
 
 getEmployeeR :: Handler Html
 getEmployeeR = do
-          renderLayout
+      renderLayout
 
 postEmployeeAcceptOfferR :: Handler Html
 postEmployeeAcceptOfferR = do
-          --doOnBlockchain (acceptOffer (JobAcceptance { jaAcceptor = "John Doe" }))
+      ((result, _), _) <- runFormPost (hiddenJobOfferForm Nothing)
+      case result of
+        FormSuccess jobOffer -> do
+          doOnBlockchain (acceptOffer jobOffer (JobAcceptance { jaAcceptor = "John Doe " }))
           renderLayout
+        FormMissing -> renderLayout
+        FormFailure _ -> renderLayout
 
 postEmployeeSubscribeR :: Handler Html
 postEmployeeSubscribeR = do

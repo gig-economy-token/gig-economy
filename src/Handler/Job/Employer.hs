@@ -14,6 +14,9 @@ import Cardano.Html.Emulator
 import Wallet.Emulator
 import qualified Data.ByteString.Lazy.Char8 as B8
 
+doOnBlockchain :: HasSimulatedChain m => MockWallet () -> m ()
+doOnBlockchain op = appendStepAndNotifyKnownWallets (walletAction employerWallet op)
+
 jobOfferForm :: Html -> MForm Handler (FormResult JobOffer, Widget)
 jobOfferForm = renderDivs $ JobOffer
               <$> areq descField (bfs ("Job description" :: Text)) Nothing
@@ -35,7 +38,8 @@ postEmployerPostOfferR = do
   ((result, widget), enctype) <- runFormPost jobOfferForm
   case result of
     FormSuccess job -> do
-        appendStepAndNotifyKnownWallets (walletAction employerWallet (postOffer job))
+        doOnBlockchain (postOffer job)
+        doOnBlockchain (subscribeToJobAcceptanceBoard job)
         renderLayout (widget, enctype)
     FormMissing -> renderLayout (widget, enctype)
     FormFailure _ -> renderLayout (widget, enctype)

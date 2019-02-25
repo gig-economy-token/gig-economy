@@ -29,7 +29,6 @@ import Language.PlutusCore.Evaluation.Result (EvaluationResult, EvaluationResult
 import Language.PlutusCore (Term(..), Constant(..))
 import Cardano.ScriptMagic
 import GHC.Generics
---import qualified Data.Set as Set
 import qualified Data.Map as Map
 import Wallet.Emulator.AddressMap (AddressMap(..))
 import Data.Maybe
@@ -41,7 +40,7 @@ data JobOffer = JobOffer
   { joDescription :: ByteString
   , joPayout      :: Int
   }
-  deriving (Show, Eq, Generic)
+  deriving (Show, Eq, Ord, Generic)
 PlutusTx.makeLift ''JobOffer
 
 -- Datatype for accepting a job offer

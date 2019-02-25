@@ -4,6 +4,7 @@
             <div .col-lg-12>
                 <div .page-header>
                     <h1>Employer
+                    #{acceptanceListing}
 
                     <h2>Actions
                     <form method=POST action=@{EmployerPostOfferR} enctype=#{postOfferEnctype}>
