@@ -9,8 +9,7 @@ import Wallet.Emulator
 import Cardano.JobContract
 import Cardano.Emulator.Job
 import Cardano.Html.Emulator
-import Cardano.Html.Template.Instances ()
-import qualified Data.ByteString.Lazy.Char8 as B8
+import Handler.Job.Forms
 
 renderLayout :: Handler Html
 renderLayout = do
@@ -31,12 +30,3 @@ mkJobBoard w = do
                                 pure (offer, (widget, enctype))
                         pure $ Just $ JobBoard offersWithForms
                   Nothing -> pure Nothing
-
-hiddenJobOfferForm :: Maybe JobOffer -> Html -> MForm Handler (FormResult JobOffer, Widget)
-hiddenJobOfferForm jo = renderDivs $ JobOffer
-              <$> areq hiddenField ("" { fsId = Just "a" }) (joDescription <$> jo)
-              <*> areq hiddenField ("" { fsId = Just "b" }) (joPayout <$> jo)
-
-instance PathPiece B8.ByteString where
-  fromPathPiece t = Just (B8.pack $ unpack t)
-  toPathPiece b = pack $ B8.unpack b
