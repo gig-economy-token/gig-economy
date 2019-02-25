@@ -5,7 +5,7 @@
 {-# LANGUAGE DeriveGeneric        #-}
 module Cardano.JobContract
   ( postOffer
---  , closeOffer
+  , closeOffer
   , acceptOffer
   , subscribeToJobBoard
   , subscribeToJobAcceptanceBoard
@@ -15,18 +15,24 @@ module Cardano.JobContract
   , jobAddress
   , parseJobOffer
   , parseJobAcceptance
+  , extractJobOffers
+  , extractJobAcceptances
   ) where
 
 import qualified Language.PlutusTx            as PlutusTx
 import           Ledger
 import           Ledger.Ada.TH as Ada
 import qualified Ledger.Validation as Validation
-import           Wallet
+import           Wallet hiding (addresses)
 import Language.PlutusTx.Evaluation (evaluateCekTrace)
 import Language.PlutusCore.Evaluation.Result (EvaluationResult, EvaluationResultF(..))
 import Language.PlutusCore (Term(..), Constant(..))
 import Cardano.ScriptMagic
 import GHC.Generics
+--import qualified Data.Set as Set
+import qualified Data.Map as Map
+import Wallet.Emulator.AddressMap (AddressMap(..))
+import Data.Maybe
 
 import           Data.ByteString.Lazy (ByteString)
 
@@ -75,9 +81,8 @@ jobBoard = ValidatorScript ($$(Ledger.compileScript [||
     in
     if ($$(PlutusTx.and) valueIsSame inSignerIsSameAsOutSigner)
     then ()
-    else $$(PlutusTx.error)
+    else $$(PlutusTx.error) ()
     
-    ()  -- FIXME: We don't validate anything!
   ||]))
 
 -- Job acceptance board
@@ -88,7 +93,7 @@ jobBoard = ValidatorScript ($$(Ledger.compileScript [||
 jobAcceptanceBoard :: ValidatorScript
 jobAcceptanceBoard = ValidatorScript ($$(Ledger.compileScript [||
   \(_ :: JobOffer) () (_ :: JobAcceptance) (_ :: Validation.PendingTx) ->
-    ()
+    ()  -- FIXME: We don't validate anything!
   ||]))
 
 jobBoardAddress :: Address
@@ -104,15 +109,13 @@ postOffer offer = do
     let ds = DataScript (Ledger.lifted (offer))
     payToScript_ defaultSlotRange jobBoardAddress ($$(adaValueOf) 0) ds
 
-{-
-closeOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> Value -> m ()
-closeOffer offer vl = do
-    let ds = DataScript (Ledger.lifted (offer))
-        inputs = Set.fromList
-        out = _
-    _ <- createTxAndSubmit defaultSlotRange inputs [out]
-    pure ()
--}
+closeOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> m ()
+closeOffer _offer = error "TODO"
+--    let ds = DataScript (Ledger.lifted offer)
+--        inputs = Set.fromList
+--        out = _
+--    _ <- createTxAndSubmit defaultSlotRange inputs [out]
+--    pure ()
 
 acceptOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> JobAcceptance -> m ()
 acceptOffer offer acceptance = do
@@ -158,3 +161,31 @@ parseJobAcceptance ds = JobAcceptance <$> acceptor
     ds' = getDataScript ds
 
     readAcceptor = $$(Ledger.compileScript [|| \(JobAcceptance {jaAcceptor}) -> jaAcceptor ||]) 
+
+
+extractJobOffers :: AddressMap -> Maybe [JobOffer]
+extractJobOffers (AddressMap am) = do
+                                              addresses <- Map.lookup jobBoardAddress am
+                                              pure $ catMaybes $ parseOffer <$> Map.toList addresses
+  where
+    parseOffer :: (TxOutRef, TxOut) -> Maybe JobOffer
+    parseOffer (_, tx) = do
+                      ds <- extractDataScript (txOutType tx)
+                      parseJobOffer ds
+    extractDataScript :: TxOutType -> Maybe DataScript
+    extractDataScript (PayToScript s) = Just s
+    extractDataScript _               = Nothing
+
+
+extractJobAcceptances :: AddressMap -> JobOffer -> Maybe [JobAcceptance]
+extractJobAcceptances (AddressMap am) jobOffer = do
+                                              addresses <- Map.lookup (jobAddress jobOffer) am
+                                              pure $ catMaybes $ parseAcc <$> Map.toList addresses
+  where
+    parseAcc :: (TxOutRef, TxOut) -> Maybe JobAcceptance
+    parseAcc (_, tx) = do
+                      ds <- extractDataScript (txOutType tx)
+                      parseJobAcceptance ds
+    extractDataScript :: TxOutType -> Maybe DataScript
+    extractDataScript (PayToScript s) = Just s
+    extractDataScript _               = Nothing

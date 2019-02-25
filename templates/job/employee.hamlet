@@ -10,3 +10,6 @@
                     <form method=POST action=@{EmployeeSubscribeR}>
                       <button .btn.btn-primary.form-control type="submit">Subscribe to job board
                       
+                    <h3>Accept all jobs -- FIXME
+                    <form method=POST action=@{EmployeeAcceptOfferR}>
+                      <button .btn.btn-primary.form-control type="submit">Accept all offers

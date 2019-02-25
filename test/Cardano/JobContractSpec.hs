@@ -7,12 +7,9 @@ import qualified Ledger
 import Cardano.JobContract
 import ArbitraryInstances ()
 import qualified Wallet.Emulator as Emulator
-import qualified Wallet.Emulator.AddressMap as AM
 import Cardano.Helpers
 import Data.Either
 import qualified Data.Map as Map
-import Handler.Job.Employee.View
-import Data.Maybe
 
 spec :: Spec
 spec = do
@@ -45,14 +42,35 @@ spec = do
           am = Emulator._addressMap wsEmployee
 
       result `shouldSatisfy` isRight
-      extractJobOffers (JobBoard am) `shouldBe` Just [jobOffer]
+      extractJobOffers am `shouldBe` Just [jobOffer]
 
+{-
+    it "Employer posts a job, then closes it, employee can't read it anymore" $ do
+      let wallets@[wEmployer, wEmployee] = Emulator.Wallet <$> [1, 2]
+          initialTx = createMiningTransaction [(wEmployer, 1)]
+          jobOffer = JobOffer "Description" 4
+          (result, state) = Emulator.runTraceTxPool [initialTx] $ do
+              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+              _ <- Emulator.walletAction wEmployee $ subscribeToJobBoard
+              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+              _ <- Emulator.walletAction wEmployer $ postOffer jobOffer
+              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+              _ <- Emulator.walletAction wEmployer $ closeOffer jobOffer
+              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+              pure ()
+          walletStates = Emulator._walletStates state
+          Just wsEmployee = Map.lookup wEmployee walletStates
+          am = Emulator._addressMap wsEmployee
+
+      result `shouldSatisfy` isRight
+      extractJobOffers am `shouldBe` Just []
+-}
     it "Employer posts a job, employee accepts it, employer sees acceptance" $ do
       let wallets@[wEmployer, wEmployee] = Emulator.Wallet <$> [1, 2]
           initialTx = createMiningTransaction [(wEmployer, 1)]
           jobOffer = JobOffer "Description" 4
           jobAcceptance = JobAcceptance "John Doe"
-          (result, _state) = Emulator.runTraceTxPool [initialTx] $ do
+          (result, state) = Emulator.runTraceTxPool [initialTx] $ do
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               _ <- Emulator.walletAction wEmployee $ subscribeToJobBoard
               _ <- Emulator.walletAction wEmployer $ subscribeToJobAcceptanceBoard jobOffer
@@ -62,20 +80,10 @@ spec = do
               _ <- Emulator.walletAction wEmployee $ acceptOffer jobOffer jobAcceptance
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               pure ()
-          _walletStates = Emulator._walletStates _state
-          Just _wsEmployer = Map.lookup wEmployer _walletStates
-          _am = AM.getAddressMap $ Emulator._addressMap _wsEmployer
-          acceptances = do
-                        txin <- Map.lookup (jobAddress jobOffer) _am
-                        let values = snd <$> Map.toList txin
-                            parseAcceptance ds = do
-                                                  ds' <- extractDataScript (Ledger.txOutType ds)
-                                                  parseJobAcceptance ds'
-                        pure $ catMaybes $ parseAcceptance <$> values
+          walletStates = Emulator._walletStates state
+          Just wsEmployer = Map.lookup wEmployer walletStates
+          am = Emulator._addressMap wsEmployer
+          acceptances = extractJobAcceptances am jobOffer
 
       result `shouldSatisfy` isRight
       acceptances `shouldBe` Just [jobAcceptance]
-
-extractDataScript :: Ledger.TxOutType -> Maybe Ledger.DataScript
-extractDataScript (Ledger.PayToScript s) = Just s
-extractDataScript _               = Nothing
