@@ -33,13 +33,12 @@ spec = do
     it "Employer posts a job, employee reads it back" $ do
       let wallets@[wEmployer, wEmployee] = Emulator.Wallet <$> [1, 2]
           initialTx = createMiningTransaction [(wEmployer, 1)]
-          jobOfferForm = JobOfferForm "Description" 4
-          jobOffer = toJobOffer jobOfferForm (Ledger.PubKey 1)
+          jobOffer = JobOffer "Description" 4 (Ledger.PubKey 1)
           (result, state) = Emulator.runTraceTxPool [initialTx] $ do
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               _ <- Emulator.walletAction wEmployee $ subscribeToJobBoard
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ postOffer jobOfferForm
+              _ <- Emulator.walletAction wEmployer $ postOffer (toJobOfferForm jobOffer)
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               pure ()
           walletStates = Emulator._walletStates state
@@ -77,13 +76,12 @@ spec = do
     it "Employer posts a job, employee accepts it, employer sees acceptance" $ do
       let wallets@[wEmployer, wEmployee] = Emulator.Wallet <$> [1, 2]
           initialTx = createMiningTransaction [(wEmployer, 1)]
-          jobOfferForm = JobOfferForm "Description" 4
           jobOffer = JobOffer "Description" 4 (Ledger.PubKey 1)
           (result, state) = Emulator.runTraceTxPool [initialTx] $ do
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               _ <- Emulator.walletAction wEmployee $ subscribeToJobBoard
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ postOffer jobOfferForm
+              _ <- Emulator.walletAction wEmployer $ postOffer (toJobOfferForm jobOffer)
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               _ <- Emulator.walletAction wEmployee $ acceptOffer jobOffer
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets

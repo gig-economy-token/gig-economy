@@ -45,4 +45,11 @@ postEmployerPostOfferR = do
     FormFailure _ -> renderLayout (widget, enctype)
 
 postEmployerCloseOfferR :: Handler Html
-postEmployerCloseOfferR = error "FIXME"
+postEmployerCloseOfferR = do
+  ((result, widget), enctype) <- runFormPost jobOfferForm
+  case result of
+    FormSuccess job -> do
+        doOnBlockchain (closeOffer job)
+        renderLayout (widget, enctype)
+    FormMissing -> renderLayout (widget, enctype)
+    FormFailure _ -> renderLayout (widget, enctype)

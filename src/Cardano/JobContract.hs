@@ -18,6 +18,7 @@ module Cardano.JobContract
   , extractJobOffers
   , extractJobAcceptances
   , toJobOffer
+  , toJobOfferForm
   ) where
 
 import Prelude hiding ((++))
@@ -35,8 +36,6 @@ import qualified Data.Map as Map
 import Wallet.Emulator.AddressMap (AddressMap(..))
 import Data.Maybe
 import qualified Data.Set as Set
-import Debug.Trace
-
 import           Data.ByteString.Lazy (ByteString)
 
 -- Datatype for posting job offers
@@ -61,6 +60,12 @@ toJobOffer JobOfferForm{..} pk = JobOffer {..}
     joPayout=jofPayout
     joOfferer=pk
 
+toJobOfferForm :: JobOffer -> JobOfferForm
+toJobOfferForm JobOffer {..} = JobOfferForm {..}
+  where
+    jofDescription=joDescription
+    jofPayout=joPayout
+
 -- Datatype for accepting a job offer
 data JobAcceptance = JobAcceptance
   { jaAcceptor    :: PubKey
@@ -79,7 +84,7 @@ PlutusTx.makeLift ''ConsList
 -- () -> JobOffer {} -> PendingTx -> ()
 jobBoard :: ValidatorScript
 jobBoard = ValidatorScript ($$(Ledger.compileScript [||
-  \() (JobOffer {}) (t :: Validation.PendingTx) ->
+  \() (JobOffer {joOfferer}) (t :: Validation.PendingTx) ->
     let
         adaValueIn :: Value -> Int
         adaValueIn v = $$(Ada.toInt) ($$(Ada.fromValue) v)
@@ -87,14 +92,10 @@ jobBoard = ValidatorScript ($$(Ledger.compileScript [||
 
     let Validation.PendingTx {
           pendingTxInputs=[
-            txin@Validation.PendingTxIn {
-              pendingTxInValue=val,
-              pendingTxInWitness=sig  -- PayToScript blah blah
+            Validation.PendingTxIn {
+              pendingTxInValue=val
             }
           ],
-          pendingTxIn = txin'@Validation.PendingTxIn {
-              pendingTxInWitness=sig'
-          },
           pendingTxOutputs=[
             Validation.PendingTxOut {
               pendingTxOutValue=val',
@@ -103,12 +104,9 @@ jobBoard = ValidatorScript ($$(Ledger.compileScript [||
           ]
         } = t
         valueIsSame = $$(PlutusTx.eq) (adaValueIn val) (adaValueIn val')
-        inSignerIsSameAsOutSigner = $$(Validation.txInSignedBy) txin pubkey
-        inSignerIsSameAsOutSigner' = $$(Validation.txInSignedBy) txin' pubkey
+        inSignerIsSameAsOutSigner = $$(Validation.eqPubKey) pubkey joOfferer
     in
     let
-        PubKey pubkey' = pubkey
-
         (++) :: ConsList a -> ConsList a -> ConsList a
         (++) Nil b = b
         (++) (Cons x xs) b = xs ++ (Cons x b)
@@ -116,21 +114,9 @@ jobBoard = ValidatorScript ($$(Ledger.compileScript [||
         sing :: a -> ConsList a
         sing a = Cons a Nil
 
-        --isLeft (Left x) = True
-        --isLeft _ = False
-
-        isRight :: Either a b -> Bool
-        isRight (Right _) = True
-        isRight _ = False
-
         msgs :: ConsList String
-        msgs = (if valueIsSame then sing "Value is same" else sing "Value is not same") ++
-               (if $$(PlutusTx.eq) pubkey' 2001 then sing "pk 2001" else sing "pk not 2001") ++
-               (if $$(PlutusTx.eq) pubkey' 2002 then sing "pk 2002" else sing "pk not 2002") ++
-               (if isRight sig then sing "right" else sing "left") ++
-               (if isRight sig' then sing "right'" else sing "left'") ++
-               (if inSignerIsSameAsOutSigner' then sing "Same signer'" else sing "Different signer'") ++
-               (if inSignerIsSameAsOutSigner then sing "Same signer" else sing "Different signer")
+        msgs = (if valueIsSame then Nil else sing "Value is not same") ++
+               (if inSignerIsSameAsOutSigner then Nil else sing "Different signer")
 
         validate :: ConsList String -> ()
         validate Nil = ()
@@ -168,8 +154,8 @@ postOffer jof = do
     let offer = toJobOffer jof pk
     let ds = DataScript (Ledger.lifted offer)
     startWatching (jobAddress offer)
-    x <- traceShowId <$> payToScript defaultSlotRange jobBoardAddress ($$(adaValueOf) 0) ds
-    x `seq` pure ()
+    _ <- payToScript defaultSlotRange jobBoardAddress ($$(adaValueOf) 0) ds
+    pure ()
 
 closeOffer :: (WalletAPI m, WalletDiagnostics m) => JobOfferForm -> m ()
 closeOffer jof = do
@@ -193,12 +179,7 @@ closeOffer jof = do
                                   { txInRef=txid
                                   , txInType=ConsumeScriptAddress jobBoard unitRedeemer
                                   }
---        out = TxOutOf
---                { txOutAddress = AddressOf (getPubKey pk)
---                , txOutValue = $$(adaValueOf) 0
---                , txOutType = PayToPubKey pk
---                }
-    out <- traceShowId <$> (ownPubKeyTxOut ($$(adaValueOf) 0))
+    out <- ownPubKeyTxOut ($$(adaValueOf) 0)
     _ <- createTxAndSubmit defaultSlotRange inputs [out]
     pure ()
 
