@@ -73,11 +73,6 @@ data JobAcceptance = JobAcceptance
   deriving (Show, Eq, Generic)
 PlutusTx.makeLift ''JobAcceptance
 
-data ConsList a = Cons a (ConsList a)
-                | Nil
-  deriving (Show, Eq, Generic)
-PlutusTx.makeLift ''ConsList
-
 -- Job board:
 -- anyone can post a JobOffer here,
 -- and only whoever posts the offer can close it.
@@ -102,29 +97,28 @@ jobBoard = ValidatorScript ($$(Ledger.compileScript [||
               pendingTxOutData=Validation.PubKeyTxOut pubkey
             }
           ]
-        } = t
+        } = t  -- It's fine if this fails matching,
+               -- as it will cause the validator to error out and reject the transaction.
+
         valueIsSame = $$(PlutusTx.eq) (adaValueIn val) (adaValueIn val')
+
         inSignerIsSameAsOutSigner = $$(Validation.eqPubKey) pubkey joOfferer
-    in
-    let
-        (++) :: ConsList a -> ConsList a -> ConsList a
-        (++) Nil b = b
-        (++) (Cons x xs) b = xs ++ (Cons x b)
 
-        sing :: a -> ConsList a
-        sing a = Cons a Nil
+        (++) :: [a] -> [a] -> [a]
+        (++) = $$(PlutusTx.append)
 
-        msgs :: ConsList String
-        msgs = (if valueIsSame then Nil else sing "Value is not same") ++
-               (if inSignerIsSameAsOutSigner then Nil else sing "Different signer")
+        msgs :: [String]
+        msgs = (if valueIsSame then [] else "Value is not same":[]) ++
+               (if inSignerIsSameAsOutSigner then [] else "Different signer":[])
 
-        validate :: ConsList String -> ()
-        validate Nil = ()
+        validate :: [String] -> ()
+        validate [] = ()
         validate xs = errorWith xs
+          where
+            errorWith :: [String] -> ()
+            errorWith [] = $$(PlutusTx.error) ()
+            errorWith (y:ys) = $$(PlutusTx.traceH) y (errorWith ys)
 
-        errorWith :: ConsList String -> ()
-        errorWith Nil = $$(PlutusTx.error) ()
-        errorWith (Cons x xs) = $$(PlutusTx.traceH) x (errorWith xs)
     in validate msgs
     
   ||]))
