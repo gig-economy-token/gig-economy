@@ -153,22 +153,27 @@ postOffer jof = do
 
 closeOffer :: (WalletAPI m, WalletDiagnostics m) => JobOfferForm -> m ()
 closeOffer jof = do
-    AddressMap _am <- watchedAddresses
+    AddressMap am <- watchedAddresses
     pk <- pubKey <$> myKeyPair
     let _ds = DataScript (Ledger.lifted (toJobOffer jof pk))
+
+        withNothing :: String -> Maybe a -> Either String a
+        withNothing err Nothing = Left err
+        withNothing _ (Just a) = Right a
+
         mtxid = do
-                  allJobs <- Map.lookup jobBoardAddress _am
+                  allJobs <- withNothing "No address" $ Map.lookup jobBoardAddress am
                   let p :: TxOut -> Bool
                       p TxOutOf { txOutType = PayToScript ds } = ds == _ds 
                       p _ = False
                   case Map.toList $ Map.filter p allJobs of
-                      [] -> Nothing
+                      [] -> Left "No entries found to close"
                       [x] -> pure x
-                      _ -> error "closeOffer: multiple entries found"
+                      _ -> Left "closeOffer: multiple entries found"
         
     (txid, tx) <- case mtxid of
-                      Nothing -> error "No entries found to close"
-                      Just a -> pure a
+                      Left err -> error err
+                      Right a -> pure a
     let inputs = Set.singleton $ TxInOf
                                   { txInRef=txid
                                   , txInType=ConsumeScriptAddress jobBoard unitRedeemer
