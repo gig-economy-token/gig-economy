@@ -24,7 +24,7 @@ postEmployeeAcceptOfferR = do
       ((result, _), _) <- runFormPost (hiddenJobOfferForm Nothing)
       case result of
         FormSuccess jobOffer -> do
-          doOnBlockchain (acceptOffer jobOffer (JobAcceptance { jaAcceptor = "John Doe" }))
+          doOnBlockchain (acceptOffer jobOffer)
           renderLayout
         FormMissing -> renderLayout
         FormFailure _ -> renderLayout

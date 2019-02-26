@@ -1,4 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE DataKinds #-}
 module Cardano.JobContractSpec (spec) where
 
 import Test.Hspec
@@ -10,6 +13,7 @@ import qualified Wallet.Emulator as Emulator
 import Cardano.Helpers
 import Data.Either
 import qualified Data.Map as Map
+import Data.Maybe
 
 spec :: Spec
 spec = do
@@ -29,12 +33,13 @@ spec = do
     it "Employer posts a job, employee reads it back" $ do
       let wallets@[wEmployer, wEmployee] = Emulator.Wallet <$> [1, 2]
           initialTx = createMiningTransaction [(wEmployer, 1)]
-          jobOffer = JobOffer "Description" 4
+          jobOfferForm = JobOfferForm "Description" 4
+          jobOffer = toJobOffer jobOfferForm (Ledger.PubKey 1)
           (result, state) = Emulator.runTraceTxPool [initialTx] $ do
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               _ <- Emulator.walletAction wEmployee $ subscribeToJobBoard
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ postOffer jobOffer
+              _ <- Emulator.walletAction wEmployer $ postOffer jobOfferForm
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               pure ()
           walletStates = Emulator._walletStates state
@@ -44,40 +49,43 @@ spec = do
       result `shouldSatisfy` isRight
       extractJobOffers am `shouldBe` Just [jobOffer]
 
-{-
     it "Employer posts a job, then closes it, employee can't read it anymore" $ do
-      let wallets@[wEmployer, wEmployee] = Emulator.Wallet <$> [1, 2]
+      let wallets@[wEmployer, wEmployee] = Emulator.Wallet <$> [2001, 2002]
           initialTx = createMiningTransaction [(wEmployer, 1)]
-          jobOffer = JobOffer "Description" 4
+          jobOfferForm = JobOfferForm "Description" 4
           (result, state) = Emulator.runTraceTxPool [initialTx] $ do
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               _ <- Emulator.walletAction wEmployee $ subscribeToJobBoard
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ postOffer jobOffer
+              _ <- Emulator.walletAction wEmployer $ postOffer jobOfferForm
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ closeOffer jobOffer
+              _ <- Emulator.walletAction wEmployer $ closeOffer jobOfferForm
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               pure ()
           walletStates = Emulator._walletStates state
           Just wsEmployee = Map.lookup wEmployee walletStates
           am = Emulator._addressMap wsEmployee
 
+          getValidationFail :: Emulator.EmulatorEvent -> Maybe (Ledger.TxId, Ledger.ValidationError)
+          getValidationFail (Emulator.TxnValidationFail a b) = Just (a, b)
+          getValidationFail _ = Nothing
+
+      (catMaybes $ getValidationFail <$> (Emulator._emulatorLog state)) `shouldBe` []
       result `shouldSatisfy` isRight
       extractJobOffers am `shouldBe` Just []
--}
+
     it "Employer posts a job, employee accepts it, employer sees acceptance" $ do
       let wallets@[wEmployer, wEmployee] = Emulator.Wallet <$> [1, 2]
           initialTx = createMiningTransaction [(wEmployer, 1)]
-          jobOffer = JobOffer "Description" 4
-          jobAcceptance = JobAcceptance "John Doe"
+          jobOfferForm = JobOfferForm "Description" 4
+          jobOffer = JobOffer "Description" 4 (Ledger.PubKey 1)
           (result, state) = Emulator.runTraceTxPool [initialTx] $ do
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               _ <- Emulator.walletAction wEmployee $ subscribeToJobBoard
-              _ <- Emulator.walletAction wEmployer $ subscribeToJobAcceptanceBoard jobOffer
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ postOffer jobOffer
+              _ <- Emulator.walletAction wEmployer $ postOffer jobOfferForm
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployee $ acceptOffer jobOffer jobAcceptance
+              _ <- Emulator.walletAction wEmployee $ acceptOffer jobOffer
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               pure ()
           walletStates = Emulator._walletStates state
@@ -86,4 +94,4 @@ spec = do
           acceptances = extractJobAcceptances am jobOffer
 
       result `shouldSatisfy` isRight
-      acceptances `shouldBe` Just [jobAcceptance]
+      acceptances `shouldBe` Just [JobAcceptance (Ledger.PubKey 2)]

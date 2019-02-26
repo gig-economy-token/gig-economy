@@ -12,3 +12,4 @@ hiddenJobOfferForm :: Maybe JobOffer -> Html -> MForm Handler (FormResult JobOff
 hiddenJobOfferForm jo = renderDivs $ JobOffer
               <$> areq hiddenField ("" { fsId = Just "a" }) (joDescription <$> jo)
               <*> areq hiddenField ("" { fsId = Just "b" }) (joPayout <$> jo)
+              <*> areq hiddenField ("" { fsId = Just "c" }) (joOfferer <$> jo)

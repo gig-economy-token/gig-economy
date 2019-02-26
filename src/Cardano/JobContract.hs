@@ -8,8 +8,8 @@ module Cardano.JobContract
   , closeOffer
   , acceptOffer
   , subscribeToJobBoard
-  , subscribeToJobAcceptanceBoard
   , JobOffer(..)
+  , JobOfferForm(..)
   , JobAcceptance(..)
   , jobBoardAddress
   , jobAddress
@@ -17,10 +17,12 @@ module Cardano.JobContract
   , parseJobAcceptance
   , extractJobOffers
   , extractJobAcceptances
+  , toJobOffer
   ) where
 
+import Prelude hiding ((++))
 import qualified Language.PlutusTx            as PlutusTx
-import           Ledger
+import           Ledger hiding (inputs, out)
 import           Ledger.Ada.TH as Ada
 import qualified Ledger.Validation as Validation
 import           Wallet hiding (addresses)
@@ -32,6 +34,8 @@ import GHC.Generics
 import qualified Data.Map as Map
 import Wallet.Emulator.AddressMap (AddressMap(..))
 import Data.Maybe
+import qualified Data.Set as Set
+import Debug.Trace
 
 import           Data.ByteString.Lazy (ByteString)
 
@@ -39,16 +43,35 @@ import           Data.ByteString.Lazy (ByteString)
 data JobOffer = JobOffer
   { joDescription :: ByteString
   , joPayout      :: Int
+  , joOfferer     :: PubKey
   }
   deriving (Show, Eq, Ord, Generic)
 PlutusTx.makeLift ''JobOffer
 
+data JobOfferForm = JobOfferForm
+  { jofDescription :: ByteString
+  , jofPayout      :: Int
+  }
+  deriving (Show, Eq, Ord, Generic)
+
+toJobOffer :: JobOfferForm -> PubKey -> JobOffer
+toJobOffer JobOfferForm{..} pk = JobOffer {..}
+  where
+    joDescription=jofDescription
+    joPayout=jofPayout
+    joOfferer=pk
+
 -- Datatype for accepting a job offer
 data JobAcceptance = JobAcceptance
-  { jaAcceptor    :: ByteString
+  { jaAcceptor    :: PubKey
   }
   deriving (Show, Eq, Generic)
 PlutusTx.makeLift ''JobAcceptance
+
+data ConsList a = Cons a (ConsList a)
+                | Nil
+  deriving (Show, Eq, Generic)
+PlutusTx.makeLift ''ConsList
 
 -- Job board:
 -- anyone can post a JobOffer here,
@@ -65,9 +88,13 @@ jobBoard = ValidatorScript ($$(Ledger.compileScript [||
     let Validation.PendingTx {
           pendingTxInputs=[
             txin@Validation.PendingTxIn {
-              pendingTxInValue=val
+              pendingTxInValue=val,
+              pendingTxInWitness=sig  -- PayToScript blah blah
             }
           ],
+          pendingTxIn = txin'@Validation.PendingTxIn {
+              pendingTxInWitness=sig'
+          },
           pendingTxOutputs=[
             Validation.PendingTxOut {
               pendingTxOutValue=val',
@@ -77,10 +104,42 @@ jobBoard = ValidatorScript ($$(Ledger.compileScript [||
         } = t
         valueIsSame = $$(PlutusTx.eq) (adaValueIn val) (adaValueIn val')
         inSignerIsSameAsOutSigner = $$(Validation.txInSignedBy) txin pubkey
+        inSignerIsSameAsOutSigner' = $$(Validation.txInSignedBy) txin' pubkey
     in
-    if ($$(PlutusTx.and) valueIsSame inSignerIsSameAsOutSigner)
-    then ()
-    else $$(PlutusTx.error) ()
+    let
+        PubKey pubkey' = pubkey
+
+        (++) :: ConsList a -> ConsList a -> ConsList a
+        (++) Nil b = b
+        (++) (Cons x xs) b = xs ++ (Cons x b)
+
+        sing :: a -> ConsList a
+        sing a = Cons a Nil
+
+        --isLeft (Left x) = True
+        --isLeft _ = False
+
+        isRight :: Either a b -> Bool
+        isRight (Right _) = True
+        isRight _ = False
+
+        msgs :: ConsList String
+        msgs = (if valueIsSame then sing "Value is same" else sing "Value is not same") ++
+               (if $$(PlutusTx.eq) pubkey' 2001 then sing "pk 2001" else sing "pk not 2001") ++
+               (if $$(PlutusTx.eq) pubkey' 2002 then sing "pk 2002" else sing "pk not 2002") ++
+               (if isRight sig then sing "right" else sing "left") ++
+               (if isRight sig' then sing "right'" else sing "left'") ++
+               (if inSignerIsSameAsOutSigner' then sing "Same signer'" else sing "Different signer'") ++
+               (if inSignerIsSameAsOutSigner then sing "Same signer" else sing "Different signer")
+
+        validate :: ConsList String -> ()
+        validate Nil = ()
+        validate xs = errorWith xs
+
+        errorWith :: ConsList String -> ()
+        errorWith Nil = $$(PlutusTx.error) ()
+        errorWith (Cons x xs) = $$(PlutusTx.traceH) x (errorWith xs)
+    in validate msgs
     
   ||]))
 
@@ -103,35 +162,64 @@ jobAddress jobOffer = Ledger.scriptAddress (ValidatorScript sc)
   where
     sc = (getValidator jobAcceptanceBoard) `applyScript` (Ledger.lifted jobOffer)
 
-postOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> m ()
-postOffer offer = do
-    let ds = DataScript (Ledger.lifted (offer))
-    payToScript_ defaultSlotRange jobBoardAddress ($$(adaValueOf) 0) ds
+postOffer :: (WalletAPI m, WalletDiagnostics m) => JobOfferForm -> m ()
+postOffer jof = do
+    pk <- pubKey <$> myKeyPair
+    let offer = toJobOffer jof pk
+    let ds = DataScript (Ledger.lifted offer)
+    startWatching (jobAddress offer)
+    x <- traceShowId <$> payToScript defaultSlotRange jobBoardAddress ($$(adaValueOf) 0) ds
+    x `seq` pure ()
 
-closeOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> m ()
-closeOffer _offer = error "TODO"
---    let ds = DataScript (Ledger.lifted offer)
---        inputs = Set.fromList
---        out = _
---    _ <- createTxAndSubmit defaultSlotRange inputs [out]
---    pure ()
+closeOffer :: (WalletAPI m, WalletDiagnostics m) => JobOfferForm -> m ()
+closeOffer jof = do
+    AddressMap _am <- watchedAddresses
+    pk <- pubKey <$> myKeyPair
+    let _ds = DataScript (Ledger.lifted (toJobOffer jof pk))
+        mtxid = do
+                  allJobs <- Map.lookup jobBoardAddress _am
+                  let p :: TxOut -> Bool
+                      p TxOutOf { txOutType = PayToScript ds } = ds == _ds 
+                      p _ = False
+                  case Map.toList $ Map.filter p allJobs of
+                      [] -> Nothing
+                      [x] -> pure x
+                      _ -> error "closeOffer: multiple entries found"
+        
+    (txid, tx) <- case mtxid of
+                      Nothing -> error "No entries found to close"
+                      Just a -> pure a
+    let inputs = Set.singleton $ TxInOf
+                                  { txInRef=txid
+                                  , txInType=ConsumeScriptAddress jobBoard unitRedeemer
+                                  }
+--        out = TxOutOf
+--                { txOutAddress = AddressOf (getPubKey pk)
+--                , txOutValue = $$(adaValueOf) 0
+--                , txOutType = PayToPubKey pk
+--                }
+    out <- traceShowId <$> (ownPubKeyTxOut ($$(adaValueOf) 0))
+    _ <- createTxAndSubmit defaultSlotRange inputs [out]
+    pure ()
 
-acceptOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> JobAcceptance -> m ()
-acceptOffer offer acceptance = do
+acceptOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> m ()
+acceptOffer offer = do
+    pk <- pubKey <$> myKeyPair
+    let acceptance = JobAcceptance {
+                        jaAcceptor = pk
+                      }
     let ds = DataScript (Ledger.lifted acceptance)
     payToScript_ defaultSlotRange (jobAddress offer) ($$(adaValueOf) 0) ds
 
 subscribeToJobBoard :: WalletAPI m => m ()
 subscribeToJobBoard = startWatching jobBoardAddress
 
-subscribeToJobAcceptanceBoard :: WalletAPI m => JobOffer -> m ()
-subscribeToJobAcceptanceBoard offer = startWatching (jobAddress offer)
-
 parseJobOffer :: DataScript -> Maybe JobOffer
-parseJobOffer ds = JobOffer <$> desc <*> payout
+parseJobOffer ds = JobOffer <$> desc <*> payout <*> pk
   where
     desc = getBS $ evaluateCekTrace (scriptToUnderlyingScript (readDesc `applyScript` ds'))
     payout = getInt $ evaluateCekTrace (scriptToUnderlyingScript (readPayout `applyScript` ds'))
+    pk = PubKey <$> (getInt $ evaluateCekTrace (scriptToUnderlyingScript (readPk `applyScript` ds')))
 
     getBS :: (a, EvaluationResult) -> Maybe ByteString
     getBS (_, EvaluationSuccess (Constant _ (BuiltinBS _ _ x))) = Just x
@@ -146,20 +234,21 @@ parseJobOffer ds = JobOffer <$> desc <*> payout
 
     readDesc = $$(Ledger.compileScript [|| \(JobOffer {joDescription}) -> joDescription ||]) 
     readPayout = $$(Ledger.compileScript [|| \(JobOffer {joPayout}) -> joPayout ||]) 
+    readPk = $$(Ledger.compileScript [|| \(JobOffer {joOfferer = PubKey k}) -> k ||]) 
 
 parseJobAcceptance :: DataScript -> Maybe JobAcceptance
 parseJobAcceptance ds = JobAcceptance <$> acceptor
   where
-    acceptor = getBS $ evaluateCekTrace (scriptToUnderlyingScript (readAcceptor `applyScript` ds'))
+    acceptor = PubKey <$> (getInt $ evaluateCekTrace (scriptToUnderlyingScript (readAcceptor `applyScript` ds')))
 
-    getBS :: (a, EvaluationResult) -> Maybe ByteString
-    getBS (_, EvaluationSuccess (Constant _ (BuiltinBS _ _ x))) = Just x
-    getBS _ = Nothing
+    getInt :: (a, EvaluationResult) -> Maybe Int
+    getInt (_, EvaluationSuccess (Constant _ (BuiltinInt _ _ x))) = Just (fromIntegral x)
+    getInt _ = Nothing
 
     ds' :: Script
     ds' = getDataScript ds
 
-    readAcceptor = $$(Ledger.compileScript [|| \(JobAcceptance {jaAcceptor}) -> jaAcceptor ||]) 
+    readAcceptor = $$(Ledger.compileScript [|| \(JobAcceptance {jaAcceptor=PubKey k}) -> k ||]) 
 
 
 extractJobOffers :: AddressMap -> Maybe [JobOffer]

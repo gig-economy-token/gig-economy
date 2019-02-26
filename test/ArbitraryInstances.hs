@@ -8,6 +8,7 @@ import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Arbitrary.Generic
 import Cardano.JobContract
 import qualified Data.ByteString.Lazy.Char8 as B8
+import qualified Ledger.Types
 
 instance Arbitrary JobOffer where
   arbitrary = genericArbitrary
@@ -19,3 +20,6 @@ instance Arbitrary JobAcceptance where
 
 instance Arbitrary B8.ByteString where
   arbitrary = B8.pack <$> genericArbitrary
+
+instance Arbitrary Ledger.Types.PubKey where
+  arbitrary = Ledger.Types.PubKey <$> arbitrary
