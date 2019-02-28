@@ -7,6 +7,7 @@ module Cardano.JobContract.Types
   ( JobOffer(..)
   , JobOfferForm(..)
   , JobApplication(..)
+  , EscrowResult(..)
   , toJobOffer
   , toJobOfferForm
   ) where
@@ -51,3 +52,11 @@ data JobApplication = JobApplication
   }
   deriving (Show, Eq, Generic)
 PlutusTx.makeLift ''JobApplication
+
+data EscrowResult
+  = EscrowAcceptedByEmployer Signature
+  | EscrowRejectedByEmployee Signature
+  | EscrowAcceptedByJudge Signature
+  | EscrowRejectedByJudge Signature
+  deriving (Show, Eq, Generic)
+PlutusTx.makeLift ''EscrowResult

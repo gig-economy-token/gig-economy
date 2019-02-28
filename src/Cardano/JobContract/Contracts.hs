@@ -78,6 +78,13 @@ jobAcceptanceBoard = ValidatorScript ($$(Ledger.compileScript [||
     ()  -- FIXME: We don't validate anything!
   ||]))
 
+jobEscrow :: ValidatorScript
+jobEscrow = ValidatorScript ($$(Ledger.compileScript [||
+  \(_ :: JobOffer) (_ :: JobApplication) ({- FIXME put oracle request here -}) (_judgeKey :: PubKey) (_ :: Validation.PendingTx) ->
+    ()  -- FIXME: We don't validate anything!
+  ||]))
+
+-- Addresses
 jobBoardAddress :: Address
 jobBoardAddress = Ledger.scriptAddress jobBoard
 
@@ -85,3 +92,11 @@ jobAddress :: JobOffer -> Address
 jobAddress jobOffer = Ledger.scriptAddress (ValidatorScript sc)
   where
     sc = (getValidator jobAcceptanceBoard) `applyScript` (Ledger.lifted jobOffer)
+
+jobEscrowAddress :: JobOffer -> JobApplication -> Address
+jobEscrowAddress jobOffer jobApplication = Ledger.scriptAddress (ValidatorScript sc)
+  where
+    offerScript = Ledger.lifted jobOffer
+    applicationScript = Ledger.lifted jobApplication
+    escrowScript = getValidator jobEscrow
+    sc = (escrowScript `applyScript` offerScript) `applyScript` applicationScript
