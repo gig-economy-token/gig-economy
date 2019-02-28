@@ -25,11 +25,11 @@ spec = do
           jobOffer' = parseJobOffer datascript
       jobOffer' `shouldBe` Just jobOffer
 
-  describe "parseJobAcceptance" $ do
-    prop "fromJust . parseJobAcceptance . Ledger.lifted == id :: JobAcceptance -> JobAcceptance" $ \jobAcceptance -> do
-      let datascript = Ledger.DataScript (Ledger.lifted jobAcceptance)
-          jobAcceptance' = parseJobAcceptance datascript
-      jobAcceptance' `shouldBe` Just jobAcceptance
+  describe "parseJobApplication" $ do
+    prop "fromJust . parseJobApplication . Ledger.lifted == id :: JobApplication -> JobApplication" $ \jobApplication -> do
+      let datascript = Ledger.DataScript (Ledger.lifted jobApplication)
+          jobApplication' = parseJobApplication datascript
+      jobApplication' `shouldBe` Just jobApplication
 
   describe "toJobOffer - (toJobOfferForm, PubKey) isomorphism" $ do
     prop "->" $ \(jof, k) -> (toJobOfferForm $ toJobOffer jof k) `shouldBe` jof
@@ -71,7 +71,7 @@ spec = do
       getEmulatorErrors state `shouldBe` []
       extractJobOffers (getAddressMap state wEmployee) `shouldBe` Just []
 
-    prop "employer posts a job, employee accepts it, employer sees acceptance" $
+    prop "employer posts a job, employee applies to it, employer sees applications" $
       \(Different (employeePk, employerPk), jobOfferForm) -> do
       let wallets@[wEmployer, wEmployee] = walletFromPubKey <$> [employerPk, employeePk]
           initialTx = createMiningTransaction [(wEmployer, 1)]
@@ -82,13 +82,13 @@ spec = do
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               _ <- Emulator.walletAction wEmployer $ postOffer jobOfferForm
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployee $ acceptOffer jobOffer
+              _ <- Emulator.walletAction wEmployee $ applyToOffer jobOffer
               _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
               pure ()
 
       result `shouldSatisfy` isRight
       getEmulatorErrors state `shouldBe` []
-      extractJobAcceptances (getAddressMap state wEmployer) jobOffer `shouldBe` Just [JobAcceptance employeePk]
+      extractJobApplications (getAddressMap state wEmployer) jobOffer `shouldBe` Just [JobApplication employeePk]
 
 walletFromPubKey :: Ledger.PubKey -> Emulator.Wallet
 walletFromPubKey (Ledger.PubKey x) = Emulator.Wallet x

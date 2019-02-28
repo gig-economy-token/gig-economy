@@ -6,17 +6,17 @@
 module Cardano.JobContract
   ( postOffer
   , closeOffer
-  , acceptOffer
+  , applyToOffer
   , subscribeToJobBoard
   , JobOffer(..)
   , JobOfferForm(..)
-  , JobAcceptance(..)
+  , JobApplication(..)
   , jobBoardAddress
   , jobAddress
   , parseJobOffer
-  , parseJobAcceptance
+  , parseJobApplication
   , extractJobOffers
-  , extractJobAcceptances
+  , extractJobApplications
   , toJobOffer
   , toJobOfferForm
   ) where
@@ -67,11 +67,11 @@ toJobOfferForm JobOffer {..} = JobOfferForm {..}
     jofPayout=joPayout
 
 -- Datatype for accepting a job offer
-data JobAcceptance = JobAcceptance
+data JobApplication = JobApplication
   { jaAcceptor    :: PubKey
   }
   deriving (Show, Eq, Generic)
-PlutusTx.makeLift ''JobAcceptance
+PlutusTx.makeLift ''JobApplication
 
 -- Job board:
 -- anyone can post a JobOffer here,
@@ -130,7 +130,7 @@ jobBoard = ValidatorScript ($$(Ledger.compileScript [||
 -- XXX: Shall we do the escrow here?? Maybe providing oracles.
 jobAcceptanceBoard :: ValidatorScript
 jobAcceptanceBoard = ValidatorScript ($$(Ledger.compileScript [||
-  \(_ :: JobOffer) () (_ :: JobAcceptance) (_ :: Validation.PendingTx) ->
+  \(_ :: JobOffer) () (_ :: JobApplication) (_ :: Validation.PendingTx) ->
     ()  -- FIXME: We don't validate anything!
   ||]))
 
@@ -178,13 +178,13 @@ closeOffer jof = do
     _ <- createTxAndSubmit defaultSlotRange inputs [out]
     pure ()
 
-acceptOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> m ()
-acceptOffer offer = do
+applyToOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> m ()
+applyToOffer offer = do
     pk <- pubKey <$> myKeyPair
-    let acceptance = JobAcceptance {
+    let application = JobApplication {
                         jaAcceptor = pk
                       }
-    let ds = DataScript (Ledger.lifted acceptance)
+    let ds = DataScript (Ledger.lifted application)
     payToScript_ defaultSlotRange (jobAddress offer) ($$(adaValueOf) 0) ds
 
 subscribeToJobBoard :: WalletAPI m => m ()
@@ -212,8 +212,8 @@ parseJobOffer ds = JobOffer <$> desc <*> payout <*> pk
     readPayout = $$(Ledger.compileScript [|| \(JobOffer {joPayout}) -> joPayout ||]) 
     readPk = $$(Ledger.compileScript [|| \(JobOffer {joOfferer = PubKey k}) -> k ||]) 
 
-parseJobAcceptance :: DataScript -> Maybe JobAcceptance
-parseJobAcceptance ds = JobAcceptance <$> acceptor
+parseJobApplication :: DataScript -> Maybe JobApplication
+parseJobApplication ds = JobApplication <$> acceptor
   where
     acceptor = PubKey <$> (getInt $ evaluateCekTrace (scriptToUnderlyingScript (readAcceptor `applyScript` ds')))
 
@@ -224,7 +224,7 @@ parseJobAcceptance ds = JobAcceptance <$> acceptor
     ds' :: Script
     ds' = getDataScript ds
 
-    readAcceptor = $$(Ledger.compileScript [|| \(JobAcceptance {jaAcceptor=PubKey k}) -> k ||]) 
+    readAcceptor = $$(Ledger.compileScript [|| \(JobApplication {jaAcceptor=PubKey k}) -> k ||]) 
 
 
 extractJobOffers :: AddressMap -> Maybe [JobOffer]
@@ -241,15 +241,15 @@ extractJobOffers (AddressMap am) = do
     extractDataScript _               = Nothing
 
 
-extractJobAcceptances :: AddressMap -> JobOffer -> Maybe [JobAcceptance]
-extractJobAcceptances (AddressMap am) jobOffer = do
+extractJobApplications :: AddressMap -> JobOffer -> Maybe [JobApplication]
+extractJobApplications (AddressMap am) jobOffer = do
                                               addresses <- Map.lookup (jobAddress jobOffer) am
                                               pure $ catMaybes $ parseAcc <$> Map.toList addresses
   where
-    parseAcc :: (TxOutRef, TxOut) -> Maybe JobAcceptance
+    parseAcc :: (TxOutRef, TxOut) -> Maybe JobApplication
     parseAcc (_, tx) = do
                       ds <- extractDataScript (txOutType tx)
-                      parseJobAcceptance ds
+                      parseJobApplication ds
     extractDataScript :: TxOutType -> Maybe DataScript
     extractDataScript (PayToScript s) = Just s
     extractDataScript _               = Nothing

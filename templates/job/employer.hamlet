@@ -13,7 +13,7 @@
                   <li>
                     #{show $ jeOffer offer}
                     <ul>
-                      $forall a <- jeAcceptances offer
+                      $forall a <- jeApplications offer
                         <li>#{show a}
                     <form method=POST action=@{EmployerCloseOfferR} enctype=#{snd $ jeForm offer}>
                       ^{fst $ jeForm offer}

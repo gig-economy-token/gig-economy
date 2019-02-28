@@ -20,7 +20,7 @@ renderLayout (postOfferForm, postOfferEnctype) = do
 data JobEntry = JobEntry
   { jeOffer :: JobOffer
   , jeForm :: (Widget, Enctype)
-  , jeAcceptances :: [JobAcceptance]
+  , jeApplications :: [JobApplication]
   }
 
 mkAcceptanceListing :: Handler [JobEntry]
@@ -32,5 +32,5 @@ mkAcceptanceListing = do
                               pure JobEntry
                                     { jeOffer = offer
                                     , jeForm = (widget, enctype)
-                                    , jeAcceptances = fromMaybe [] $ extractJobAcceptances am offer
+                                    , jeApplications = fromMaybe [] $ extractJobApplications am offer
                                     }

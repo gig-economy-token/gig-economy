@@ -14,7 +14,7 @@ instance Arbitrary JobOffer where
   arbitrary = genericArbitrary
   shrink = genericShrink
 
-instance Arbitrary JobAcceptance where
+instance Arbitrary JobApplication where
   arbitrary = genericArbitrary
   shrink = genericShrink
 
