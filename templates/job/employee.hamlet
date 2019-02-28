@@ -16,4 +16,4 @@
                 <form method=POST action=@{EmployeeAcceptOfferR} enctype=#{e}>
                   ^{w}
                   Offer: #{show o}
-                  <button .btn.btn-primary type="submit">Accept offer
+                  <button .btn.btn-primary type="submit">Apply to offer
