@@ -108,6 +108,8 @@ tests:
     - hspec >=2.0.0
     - yesod-test
     - microlens
+    - QuickCheck
+    - generic-arbitrary
 
 # Define flags used by "yesod devel" to make compilation faster
 flags:

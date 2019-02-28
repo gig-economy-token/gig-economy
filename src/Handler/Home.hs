@@ -6,32 +6,8 @@ module Handler.Home where
 
 import Import
 
-import qualified Cardano.GuessingGame as GuessingGame
-import qualified Cardano.Html.Template as CardanoHtml
-
--- Define our data that will be used for creating the form.
-data FileForm = FileForm
-    { fileInfo :: FileInfo
-    , fileDescription :: Text
-    }
-
--- This is a handler function for the GET request method on the HomeR
--- resource pattern. All of your resource patterns are defined in
--- config/routes
---
--- The majority of the code you will write in Yesod lives in these handler
--- functions. You can spread them across multiple files if you are so
--- inclined, or create a single monolithic file.
 getHomeR :: Handler Html
 getHomeR = do
-
     defaultLayout $ do
         setTitle "Welcome To GiG Economy!"
-        let 
-            (_result, simulatorStatus) = GuessingGame.simulateWithSampleWallets
-            subtitle :: String
-            subtitle = "" :: String
-            contentTitle = "Sample transaction result" :: String
-            content = CardanoHtml.showEmulatorState simulatorStatus
-
         $(widgetFile "homepage")

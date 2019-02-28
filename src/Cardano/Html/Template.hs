@@ -13,6 +13,7 @@ import qualified Wallet.Emulator.AddressMap as AM
 import qualified Wallet.API as WalletAPI
 import qualified Data.Map as Map
 import Import
+import Cardano.Html.Template.Instances ()
 
 -- TODO: Make this into a decent EventTrigger displayer
 -- the trigger API sounds quite interesting, with support for:
@@ -35,11 +36,11 @@ showAddressMap :: AM.AddressMap -> Html
 showAddressMap m = [shamlet|
 <ul>
   $forall address <- Map.toList $ AM.getAddressMap m
-    <li>#{show $ fst address}
+    <li>#{fst address}
       <ul>
         $forall map <- Map.toList $ snd address
-          <li>#{show $ fst map}
-          <li>#{show $ snd map}
+          <li>#{fst map}
+          <li>#{snd map}
 |]
 
 showWalletStates :: Map.Map Emulator.Wallet Emulator.WalletState -> Html
@@ -50,10 +51,9 @@ $else
   <ul>
     $forall (wallet, state) <- wallets
       <li>
-        Wallet #{Emulator.getWallet wallet}
+        Wallet #{Emulator.getWallet wallet} - #{Emulator._ownKeyPair state}
         <ul>
-          <li>Own Keypair: #{show $ Emulator._ownKeyPair state}
-          <li>Slot: #{show $ Emulator._walletSlot state}
+          <li>#{Emulator._walletSlot state}
           <li>Address map #{showAddressMap (Emulator._addressMap state)}
           <li>Triggers: #{showTriggers $ Emulator._triggers state}
 |]
@@ -71,7 +71,7 @@ showEmulatorEvent (Emulator.TxnValidationFail txID e) = [shamlet|
 TxnValidationError #{show txID} #{show e}
 |]
 showEmulatorEvent (Emulator.SlotAdd slot) = [shamlet|
-SlotAdd #{show slot}
+SlotAdd #{slot}
 |]
 showEmulatorEvent (Emulator.WalletError w e) = [shamlet|
 WalletError #{show w} - #{show e}
@@ -92,7 +92,7 @@ $else
 
 showTx :: Ledger.Tx -> Html
 showTx tx = [shamlet|
-Tx
+#{Ledger.hashTx tx}
 <ul>
   <li>txInputs:
     $if null $ Set.toList $ Ledger.txInputs tx
@@ -100,7 +100,7 @@ Tx
     $else
       <ul>
         $forall input <- Set.toList $ Ledger.txInputs tx
-          <li>#{show input}
+          <li>#{input}
 
   <li>txOutputs:
     $if null $ Ledger.txOutputs tx
@@ -108,14 +108,11 @@ Tx
     $else
       <ul>
         $forall output <- Ledger.txOutputs tx
-          <li> #{show $ Ledger.txOutType output}
-            <ul>
-              <li> #{show $ Ledger.txOutAddress output}
-              <li> #{show $ Ledger.txOutValue output}
+          <li> #{output}
 
-  <li>txForge: #{show $ Ledger.txForge tx}
-  <li>txFee: #{show $ Ledger.txFee tx}
-  <li>txValidRange: #{show $ Ledger.txValidRange tx}
+  <li>txForge: #{Ledger.txForge tx}
+  <li>txFee: #{Ledger.txFee tx}
+  <li>txValidRange: #{Ledger.txValidRange tx}
 |]
 
 showChain :: Ledger.Blockchain -> Html
@@ -141,9 +138,9 @@ $if null entries
 $else
   <ul>
     $forall (k, v) <- entries
-      <li>#{show k}
+      <li>#{k}
         <ul>
-          <li>#{show v}
+          <li>#{v}
 |]
   where
     entries = Map.toList $ Ledger.getIndex i

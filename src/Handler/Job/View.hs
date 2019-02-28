@@ -1,7 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude  #-}
 {-# LANGUAGE TemplateHaskell    #-}
 {-# LANGUAGE QuasiQuotes        #-}
-module Handler.GuessingGame.View where
+module Handler.Job.View where
 
 import Import
 

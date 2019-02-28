@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Cardano.GuessingGameSpec (spec) where
+module Cardano.GameContractSpec (spec) where
 
 import Cardano.Helpers
 import Test.Hspec
