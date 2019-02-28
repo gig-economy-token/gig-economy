@@ -157,17 +157,13 @@ closeOffer jof = do
     pk <- pubKey <$> myKeyPair
     let _ds = DataScript (Ledger.lifted (toJobOffer jof pk))
 
-        withNothing :: String -> Maybe a -> Either String a
-        withNothing err Nothing = Left err
-        withNothing _ (Just a) = Right a
-
         mtxid = do
-                  allJobs <- withNothing "No address" $ Map.lookup jobBoardAddress am
+                  allJobs <- maybe (Left "No address") Right $ Map.lookup jobBoardAddress am
                   let p :: TxOut -> Bool
                       p TxOutOf { txOutType = PayToScript ds } = ds == _ds 
                       p _ = False
                   case Map.toList $ Map.filter p allJobs of
-                      [] -> Left "No entries found to close"
+                      [] -> Left "closeOffer: No entries found to close"
                       [x] -> pure x
                       _ -> Left "closeOffer: multiple entries found"
         

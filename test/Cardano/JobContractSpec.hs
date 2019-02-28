@@ -20,18 +20,18 @@ import Data.Maybe
 spec :: Spec
 spec = do
   describe "parseJobOffer" $ do
-    prop "parseJobOffer . Ledger.lifted == id" $ \jobOffer -> do
+    prop "fromJust . parseJobOffer . Ledger.lifted == id :: JobOffer -> JobOffer" $ \jobOffer -> do
       let datascript = Ledger.DataScript (Ledger.lifted jobOffer)
           jobOffer' = parseJobOffer datascript
       jobOffer' `shouldBe` Just jobOffer
 
   describe "parseJobAcceptance" $ do
-    prop "parseJobAcceptance . Ledger.lifted == id" $ \jobAcceptance -> do
+    prop "fromJust . parseJobAcceptance . Ledger.lifted == id :: JobAcceptance -> JobAcceptance" $ \jobAcceptance -> do
       let datascript = Ledger.DataScript (Ledger.lifted jobAcceptance)
           jobAcceptance' = parseJobAcceptance datascript
       jobAcceptance' `shouldBe` Just jobAcceptance
 
-  describe "toJobOffer - toJobOfferForm isomorphism" $ do
+  describe "toJobOffer - (toJobOfferForm, PubKey) isomorphism" $ do
     prop "->" $ \(jof, k) -> (toJobOfferForm $ toJobOffer jof k) `shouldBe` jof
     prop "<-" $ \jo -> (toJobOffer (toJobOfferForm jo) (joOfferer jo)) `shouldBe` jo
 
