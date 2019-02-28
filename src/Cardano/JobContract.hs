@@ -28,7 +28,7 @@ import           Ledger.Ada.TH as Ada
 import qualified Ledger.Validation as Validation
 import           Wallet hiding (addresses)
 import Language.PlutusTx.Evaluation (evaluateCekTrace)
-import Language.PlutusCore.Evaluation.Result (EvaluationResult, EvaluationResultF(..))
+import Language.PlutusCore.Evaluation.Result (EvaluationResult(..))
 import Language.PlutusCore (Term(..), Constant(..))
 import Cardano.ScriptMagic
 import GHC.Generics
@@ -197,11 +197,11 @@ parseJobOffer ds = JobOffer <$> desc <*> payout <*> pk
     payout = getInt $ evaluateCekTrace (scriptToUnderlyingScript (readPayout `applyScript` ds'))
     pk = PubKey <$> (getInt $ evaluateCekTrace (scriptToUnderlyingScript (readPk `applyScript` ds')))
 
-    getBS :: (a, EvaluationResult) -> Maybe ByteString
+    getBS :: (a, EvaluationResult (Term b c d)) -> Maybe ByteString
     getBS (_, EvaluationSuccess (Constant _ (BuiltinBS _ _ x))) = Just x
     getBS _ = Nothing
 
-    getInt :: (a, EvaluationResult) -> Maybe Int
+    getInt :: (a, EvaluationResult (Term b c d)) -> Maybe Int
     getInt (_, EvaluationSuccess (Constant _ (BuiltinInt _ _ x))) = Just (fromIntegral x)
     getInt _ = Nothing
 
@@ -217,7 +217,7 @@ parseJobAcceptance ds = JobAcceptance <$> acceptor
   where
     acceptor = PubKey <$> (getInt $ evaluateCekTrace (scriptToUnderlyingScript (readAcceptor `applyScript` ds')))
 
-    getInt :: (a, EvaluationResult) -> Maybe Int
+    getInt :: (a, EvaluationResult (Term b c d)) -> Maybe Int
     getInt (_, EvaluationSuccess (Constant _ (BuiltinInt _ _ x))) = Just (fromIntegral x)
     getInt _ = Nothing
 
