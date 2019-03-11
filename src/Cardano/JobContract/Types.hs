@@ -3,14 +3,7 @@
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE DeriveGeneric        #-}
-module Cardano.JobContract.Types
-  ( JobOffer(..)
-  , JobOfferForm(..)
-  , JobApplication(..)
-  , EscrowResult(..)
-  , toJobOffer
-  , toJobOfferForm
-  ) where
+module Cardano.JobContract.Types where
 
 import Prelude hiding ((++))
 import qualified Language.PlutusTx            as PlutusTx
@@ -53,10 +46,20 @@ data JobApplication = JobApplication
   deriving (Show, Eq, Generic)
 PlutusTx.makeLift ''JobApplication
 
+-- Datatype for setting up the escrow
+data EscrowSetup = EscrowSetup
+  { esEmployer  :: PubKey
+  , esEmployee  :: PubKey
+  , esArbiter  :: PubKey
+  }
+  deriving (Show, Eq, Generic)
+PlutusTx.makeLift ''EscrowSetup
+
+-- Datatype for the result of the escrow
 data EscrowResult
   = EscrowAcceptedByEmployer Signature
   | EscrowRejectedByEmployee Signature
-  | EscrowAcceptedByJudge Signature
-  | EscrowRejectedByJudge Signature
+  | EscrowAcceptedByArbiter Signature
+  | EscrowRejectedByArbiter Signature
   deriving (Show, Eq, Generic)
 PlutusTx.makeLift ''EscrowResult

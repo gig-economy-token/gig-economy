@@ -80,7 +80,7 @@ jobAcceptanceBoard = ValidatorScript ($$(Ledger.compileScript [||
 
 jobEscrow :: ValidatorScript
 jobEscrow = ValidatorScript ($$(Ledger.compileScript [||
-  \(_ :: JobOffer) (_ :: JobApplication) ({- FIXME put oracle request here -}) (_judgeKey :: PubKey) (_ :: Validation.PendingTx) ->
+  \(_ :: JobOffer) (_ :: JobApplication) (_result :: EscrowResult) (_setup :: EscrowSetup) (_ :: Validation.PendingTx) ->
     ()  -- FIXME: We don't validate anything!
   ||]))
 
