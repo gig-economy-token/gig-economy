@@ -8,11 +8,14 @@ module Cardano.JobContract.Contracts
   , jobBoardAddress
   , jobAcceptanceBoard
   , jobAddress
+  , jobEscrowAddress
+  , jobEscrowContract
   ) where
 
-import Prelude hiding ((++))
+import Prelude hiding ((++), and)
 import qualified Language.PlutusTx            as PlutusTx
 import           Ledger hiding (inputs, out)
+import qualified Ledger.Value.TH
 import           Ledger.Ada.TH as Ada
 import qualified Ledger.Validation as Validation
 import Cardano.JobContract.Types
@@ -78,10 +81,60 @@ jobAcceptanceBoard = ValidatorScript ($$(Ledger.compileScript [||
     ()  -- FIXME: We don't validate anything!
   ||]))
 
-jobEscrow :: ValidatorScript
-jobEscrow = ValidatorScript ($$(Ledger.compileScript [||
-  \(_ :: JobOffer) (_ :: JobApplication) (_result :: EscrowResult) (_setup :: EscrowSetup) (_ :: Validation.PendingTx) ->
-    ()  -- FIXME: We don't validate anything!
+jobEscrow' :: ValidatorScript
+jobEscrow' = ValidatorScript ($$(Ledger.compileScript [||
+  \ (_ :: JobOffer)
+    (_ :: JobApplication)
+    (result :: EscrowResult)
+    (setup :: EscrowSetup)
+    (tx :: Validation.PendingTx)
+    ->
+    let EscrowSetup {esEmployer=employerPubKey, esEmployee=employeePubKey, esArbiter=arbiterPubKey} = setup in
+    let Validation.PendingTx {
+          pendingTxInputs=[
+            Validation.PendingTxIn {
+              pendingTxInValue=val
+            }
+          ],
+          pendingTxOutputs=[
+            Validation.PendingTxOut {
+              pendingTxOutValue=val',
+              pendingTxOutData=Validation.PubKeyTxOut pubkey
+            }
+          ]
+        } = tx -- It's fine if this fails matching,
+               -- as it will cause the validator to error out and reject the transaction.
+
+    in
+    let
+      eqPubKey = $$(Validation.eqPubKey)
+    in
+    let
+      --txSignedBy = $$(Validation.txSignedBy)
+
+      signedBy' :: Signature -> PubKey -> Bool
+      signedBy' (Signature sig) (PubKey pk) = sig == pk
+
+      and = $$(PlutusTx.and)
+      eqVal = $$(Ledger.Value.TH.eq)
+
+    in case result of
+      EscrowAcceptedByEmployer sig ->
+        if (and (and (signedBy' sig employerPubKey) (eqPubKey pubkey employeePubKey)) (eqVal val val'))
+        then ()
+        else $$(PlutusTx.traceH) "Bad acceptance by employer" ($$(PlutusTx.error) ())
+      EscrowRejectedByEmployee sig ->
+        if (and (and (signedBy' sig employeePubKey) (eqPubKey pubkey employerPubKey)) (eqVal val val'))
+        then ()
+        else $$(PlutusTx.traceH) "Bad reject by employee" ($$(PlutusTx.error) ())
+      EscrowAcceptedByArbiter sig ->
+        if (and (and (signedBy' sig arbiterPubKey) (eqPubKey pubkey employeePubKey)) (eqVal val val'))
+        then ()
+        else $$(PlutusTx.traceH) "Bad acceptance by arbiter" ($$(PlutusTx.error) ())
+      EscrowRejectedByArbiter sig ->
+        if (and (and (signedBy' sig arbiterPubKey) (eqPubKey pubkey employerPubKey)) (eqVal val val'))
+        then ()
+        else $$(PlutusTx.traceH) "Bad reject by arbiter" ($$(PlutusTx.error) ())
   ||]))
 
 -- Addresses
@@ -94,9 +147,12 @@ jobAddress jobOffer = Ledger.scriptAddress (ValidatorScript sc)
     sc = (getValidator jobAcceptanceBoard) `applyScript` (Ledger.lifted jobOffer)
 
 jobEscrowAddress :: JobOffer -> JobApplication -> Address
-jobEscrowAddress jobOffer jobApplication = Ledger.scriptAddress (ValidatorScript sc)
+jobEscrowAddress jobOffer jobApplication = Ledger.scriptAddress (jobEscrowContract jobOffer jobApplication)
+
+jobEscrowContract :: JobOffer -> JobApplication -> ValidatorScript
+jobEscrowContract jobOffer jobApplication = (ValidatorScript sc)
   where
     offerScript = Ledger.lifted jobOffer
     applicationScript = Ledger.lifted jobApplication
-    escrowScript = getValidator jobEscrow
+    escrowScript = getValidator jobEscrow'
     sc = (escrowScript `applyScript` offerScript) `applyScript` applicationScript
