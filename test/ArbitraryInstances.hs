@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module ArbitraryInstances where
 
@@ -9,9 +10,13 @@ import Test.QuickCheck.Arbitrary.Generic
 import Cardano.JobContract
 import qualified Data.ByteString.Lazy.Char8 as B8
 import qualified Ledger.Types
+import qualified Wallet.API
 
 instance Arbitrary JobOffer where
-  arbitrary = genericArbitrary
+  arbitrary = JobOffer
+                <$> arbitrary
+                <*> (getPositive <$> arbitrary)
+                <*> arbitrary
   shrink = genericShrink
 
 instance Arbitrary JobApplication where
@@ -19,7 +24,9 @@ instance Arbitrary JobApplication where
   shrink = genericShrink
 
 instance Arbitrary JobOfferForm where
-  arbitrary = genericArbitrary
+  arbitrary = JobOfferForm
+                <$> arbitrary
+                <*> (getPositive <$> arbitrary)
   shrink = genericShrink
 
 instance Arbitrary B8.ByteString where
@@ -28,9 +35,19 @@ instance Arbitrary B8.ByteString where
 instance Arbitrary Ledger.Types.PubKey where
   arbitrary = Ledger.Types.PubKey <$> arbitrary
 
-data Different a = Different { fromDifferent :: (a, a) }
+instance Arbitrary Wallet.API.KeyPair where
+  arbitrary = (Wallet.API.keyPair . getNonNegative) <$> arbitrary
+
+data Different2 a = Different2 { fromDifferent2 :: (a, a) }
   deriving (Show)
 
-instance (Arbitrary a, Eq a) => Arbitrary (Different a) where
-  arbitrary = Different <$> arbitrary `suchThat` (\(a, b) -> a /= b)
+instance (Arbitrary a, Eq a) => Arbitrary (Different2 a) where
+  arbitrary = Different2 <$> arbitrary `suchThat` (\(a, b) -> a /= b)
+  shrink = const []
+
+data Different3 a = Different3 { fromDifferent3 :: (a, a, a) }
+  deriving (Show)
+
+instance (Arbitrary a, Eq a) => Arbitrary (Different3 a) where
+  arbitrary = Different3 <$> arbitrary `suchThat` (\(a, b, c) -> a /= b && a /= c && b /= c)
   shrink = const []

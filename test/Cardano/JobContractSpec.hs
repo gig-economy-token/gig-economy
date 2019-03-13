@@ -3,6 +3,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 module Cardano.JobContractSpec (spec) where
 
 import Test.Hspec
@@ -49,7 +50,7 @@ jobBoardSpec :: Spec
 jobBoardSpec = do
   describe "Basic use cases" $ do
     prop "Employer posts a job, employee reads it back" $
-      \(Different (employeePk, employerPk), jobOfferForm) -> do
+      \(Different2 (employeePk, employerPk), jobOfferForm) -> do
       let wallets@[wEmployer, wEmployee] = walletFromPubKey <$> [employerPk, employeePk]
           initialTx = createMiningTransaction [(wEmployer, 1)]
           jobOffer = toJobOffer jobOfferForm employerPk
@@ -66,7 +67,7 @@ jobBoardSpec = do
       extractJobOffers (getAddressMap state wEmployee) `shouldBe` Just [jobOffer]
 
     prop "Employer posts a job, then closes it, employee can't read it anymore" $
-      \(Different (employeePk, employerPk), jobOfferForm) -> do
+      \(Different2 (employeePk, employerPk), jobOfferForm) -> do
       let wallets@[wEmployee, wEmployer] = walletFromPubKey <$> [employeePk, employerPk]
           initialTx = createMiningTransaction [(wEmployer, 1)]
           (result, state) = Emulator.runTraceTxPool [initialTx] $ do
@@ -84,7 +85,7 @@ jobBoardSpec = do
       extractJobOffers (getAddressMap state wEmployee) `shouldBe` Just []
 
     prop "employer posts a job, employee applies to it, employer sees applications" $
-      \(Different (employeePk, employerPk), jobOfferForm) -> do
+      \(Different2 (employeePk, employerPk), jobOfferForm) -> do
       let wallets@[wEmployer, wEmployee] = walletFromPubKey <$> [employerPk, employeePk]
           initialTx = createMiningTransaction [(wEmployer, 1)]
           jobOffer = toJobOffer jobOfferForm employerPk
@@ -105,209 +106,222 @@ jobBoardSpec = do
 
 escrowSpec :: Spec
 escrowSpec = do
-    it "employer creates an escrow, and then releases it" $ do
-      let 
-          keypairs@[employerKP, employeeKP, arbiterKP] = WalletAPI.keyPair <$> [1, 2, 3]
-          wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
-          initialTx = createMiningTransaction [(wEmployer, 100)]
+    describe "employer creates an escrow, and then" $ do
+      prop "releases it" $ 
+        \(Different3 (employerKP, employeeKP, arbiterKP), jobOffer') -> do
+        let 
+            keypairs = [employerKP, employeeKP, arbiterKP]
+            wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
+            initialTx = createMiningTransaction [(wEmployer, joPayout jobOffer')]
 
-          jobOffer = JobOffer "description" 100 (WalletAPI.pubKey employerKP)
-          jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
-         
-          (result, state) = Emulator.runTraceTxPool [initialTx] $ do
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf 100)
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ escrowAcceptEmployer jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              pure ()
+            jobOffer = jobOffer' { joOfferer = WalletAPI.pubKey employerKP }
+            jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
+           
+            (result, state) = Emulator.runTraceTxPool [initialTx] $ do
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf (joPayout jobOffer'))
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployer $ escrowAcceptEmployer jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                pure ()
 
-      result `shouldSatisfy` isRight
-      getEmulatorErrors state `shouldBe` []
-      resultingFunds state wEmployer `shouldBe` 0
-      resultingFunds state wArbiter `shouldBe` 0
-      resultingFunds state wEmployee `shouldBe` 100
+        result `shouldSatisfy` isRight
+        getEmulatorErrors state `shouldBe` []
+        resultingFunds state wEmployer `shouldBe` 0
+        resultingFunds state wArbiter `shouldBe` 0
+        resultingFunds state wEmployee `shouldBe` joPayout jobOffer'
 
-    it "employer creates an escrow, employee rejects it back to the employer" $ do
-      let 
-          keypairs@[employerKP, employeeKP, arbiterKP] = WalletAPI.keyPair <$> [1, 2, 3]
-          wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
-          initialTx = createMiningTransaction [(wEmployer, 100)]
+      prop "employee rejects it back to the employer" $
+        \(Different3 (employerKP, employeeKP, arbiterKP), jobOffer') -> do
+        let 
+            keypairs = [employerKP, employeeKP, arbiterKP]
+            wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
+            initialTx = createMiningTransaction [(wEmployer, joPayout jobOffer)]
 
-          jobOffer = JobOffer "description" 100 (WalletAPI.pubKey employerKP)
-          jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
-         
-          (result, state) = Emulator.runTraceTxPool [initialTx] $ do
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf 100)
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployee $ escrowRejectEmployee jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              pure ()
+            jobOffer = jobOffer' { joOfferer = WalletAPI.pubKey employerKP }
+            jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
+           
+            (result, state) = Emulator.runTraceTxPool [initialTx] $ do
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf 100)
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployee $ escrowRejectEmployee jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                pure ()
 
-      result `shouldSatisfy` isRight
-      getEmulatorErrors state `shouldBe` []
-      resultingFunds state wEmployee `shouldBe` 0
-      resultingFunds state wArbiter `shouldBe` 0
-      resultingFunds state wEmployer `shouldBe` 100
+        result `shouldSatisfy` isRight
+        getEmulatorErrors state `shouldBe` []
+        resultingFunds state wEmployee `shouldBe` 0
+        resultingFunds state wArbiter `shouldBe` 0
+        resultingFunds state wEmployer `shouldBe` joPayout jobOffer
 
-    it "employer creates an escrow, arbiter decides the employee should receive the funds" $ do
-      let 
-          keypairs@[employerKP, employeeKP, arbiterKP] = WalletAPI.keyPair <$> [1, 2, 3]
-          wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
-          initialTx = createMiningTransaction [(wEmployer, 100)]
+      prop "arbiter decides the employee should receive the funds" $
+        \(Different3 (employerKP, employeeKP, arbiterKP), jobOffer') -> do
+        let 
+            keypairs = [employerKP, employeeKP, arbiterKP]
+            wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
+            initialTx = createMiningTransaction [(wEmployer, joPayout jobOffer)]
 
-          jobOffer = JobOffer "description" 100 (WalletAPI.pubKey employerKP)
-          jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
-         
-          (result, state) = Emulator.runTraceTxPool [initialTx] $ do
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
-              _ <- Emulator.walletAction wArbiter $ subscribeToEscrow jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf 100)
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              x <- Emulator.walletAction wArbiter $ escrowAcceptArbiter jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              pure x
+            jobOffer = jobOffer' { joOfferer = WalletAPI.pubKey employerKP }
+            jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
 
-      result `shouldSatisfy` isRight
-      print result
-      getEmulatorErrors state `shouldBe` []
-      resultingFunds state wEmployer `shouldBe` 0
-      resultingFunds state wArbiter `shouldBe` 0
-      resultingFunds state wEmployee `shouldBe` 100
+            (result, state) = Emulator.runTraceTxPool [initialTx] $ do
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.walletAction wArbiter $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf (joPayout jobOffer))
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                x <- Emulator.walletAction wArbiter $ escrowAcceptArbiter jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                pure x
 
-    it "employer creates an escrow, arbiter decides the employer should receive back the funds" $ do
-      let 
-          keypairs@[employerKP, employeeKP, arbiterKP] = WalletAPI.keyPair <$> [1, 2, 3]
-          wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
-          initialTx = createMiningTransaction [(wEmployer, 100)]
+        result `shouldSatisfy` isRight
+        getEmulatorErrors state `shouldBe` []
+        resultingFunds state wEmployer `shouldBe` 0
+        resultingFunds state wArbiter `shouldBe` 0
+        resultingFunds state wEmployee `shouldBe` joPayout jobOffer
 
-          jobOffer = JobOffer "description" 100 (WalletAPI.pubKey employerKP)
-          jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
-         
-          (result, state) = Emulator.runTraceTxPool [initialTx] $ do
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
-              _ <- Emulator.walletAction wArbiter $ subscribeToEscrow jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf 100)
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wArbiter $ escrowRejectArbiter jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              pure ()
+      prop "arbiter decides the employer should receive back the funds" $
+        \(Different3 (employerKP, employeeKP, arbiterKP), jobOffer') -> do
+        let 
+            keypairs = [employerKP, employeeKP, arbiterKP]
+            wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
+            initialTx = createMiningTransaction [(wEmployer, joPayout jobOffer)]
 
-      result `shouldSatisfy` isRight
-      getEmulatorErrors state `shouldBe` []
-      resultingFunds state wEmployee `shouldBe` 0
-      resultingFunds state wArbiter `shouldBe` 0
-      resultingFunds state wEmployer `shouldBe` 100
+            jobOffer = jobOffer' { joOfferer = WalletAPI.pubKey employerKP }
+            jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
+
+            (result, state) = Emulator.runTraceTxPool [initialTx] $ do
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.walletAction wArbiter $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf (joPayout jobOffer))
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wArbiter $ escrowRejectArbiter jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                pure ()
+
+        result `shouldSatisfy` isRight
+        getEmulatorErrors state `shouldBe` []
+        resultingFunds state wEmployee `shouldBe` 0
+        resultingFunds state wArbiter `shouldBe` 0
+        resultingFunds state wEmployer `shouldBe` joPayout jobOffer
 
 
-    it "employer creates an escrow, employee tries unsuccessfully to release it without employers approval" $ do
-      let 
-          keypairs@[employerKP, employeeKP, arbiterKP] = WalletAPI.keyPair <$> [1, 2, 3]
-          wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
-          initialTx = createMiningTransaction [(wEmployer, 100)]
+      prop "employee tries unsuccessfully to release it without employers approval" $
+        \(Different3 (employerKP, employeeKP, arbiterKP), jobOffer') -> do
+        let 
+            keypairs = [employerKP, employeeKP, arbiterKP]
+            wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
+            initialTx = createMiningTransaction [(wEmployer, joPayout jobOffer)]
 
-          jobOffer = JobOffer "description" 100 (WalletAPI.pubKey employerKP)
-          jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
-         
-          (result, state) = Emulator.runTraceTxPool [initialTx] $ do
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf 100)
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployee $ escrowAcceptEmployer jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              pure ()
+            jobOffer = jobOffer' { joOfferer = WalletAPI.pubKey employerKP }
+            jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
+           
+            (result, state) = Emulator.runTraceTxPool [initialTx] $ do
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf $ joPayout jobOffer)
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployee $ escrowAcceptEmployer jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                pure ()
 
-      result `shouldSatisfy` isRight
-      getEmulatorErrors state `shouldBe` [Ledger.ScriptFailure ["Bad acceptance by employer"]]
-      resultingFunds state wEmployee `shouldBe` 0
-      resultingFunds state wArbiter `shouldBe` 0
-      resultingFunds state wEmployer `shouldBe` 0
+        result `shouldSatisfy` isRight
+        getEmulatorErrors state `shouldBe` [Ledger.ScriptFailure ["Bad acceptance by employer"]]
+        resultingFunds state wEmployee `shouldBe` 0
+        resultingFunds state wArbiter `shouldBe` 0
+        resultingFunds state wEmployer `shouldBe` 0
 
-    it "employer creates an escrow, employer tries to get their money back without employees approval" $ do
-      let 
-          keypairs@[employerKP, employeeKP, arbiterKP] = WalletAPI.keyPair <$> [1, 2, 3]
-          wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
-          initialTx = createMiningTransaction [(wEmployer, 100)]
+      prop "employer tries to get their money back without employees approval" $
+        \(Different3 (employerKP, employeeKP, arbiterKP), jobOffer') -> do
+        let 
+            keypairs = [employerKP, employeeKP, arbiterKP]
+            wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
+            initialTx = createMiningTransaction [(wEmployer, joPayout jobOffer)]
 
-          jobOffer = JobOffer "description" 100 (WalletAPI.pubKey employerKP)
-          jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
-         
-          (result, state) = Emulator.runTraceTxPool [initialTx] $ do
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf 100)
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ escrowRejectEmployee jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              pure ()
+            jobOffer = jobOffer' { joOfferer = WalletAPI.pubKey employerKP }
+            jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
+           
+            (result, state) = Emulator.runTraceTxPool [initialTx] $ do
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf $ joPayout jobOffer)
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployer $ escrowRejectEmployee jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                pure ()
 
-      result `shouldSatisfy` isRight
-      getEmulatorErrors state `shouldBe` [Ledger.ScriptFailure ["Bad reject by employee"]]
-      resultingFunds state wEmployee `shouldBe` 0
-      resultingFunds state wArbiter `shouldBe` 0
-      resultingFunds state wEmployer `shouldBe` 0
+        result `shouldSatisfy` isRight
+        getEmulatorErrors state `shouldBe` [Ledger.ScriptFailure ["Bad reject by employee"]]
+        resultingFunds state wEmployee `shouldBe` 0
+        resultingFunds state wArbiter `shouldBe` 0
+        resultingFunds state wEmployer `shouldBe` 0
 
-    it "employer creates an escrow, employer tries to get their money back by pretending to be the arbiter" $ do
-      let 
-          keypairs@[employerKP, employeeKP, arbiterKP] = WalletAPI.keyPair <$> [1, 2, 3]
-          wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
-          initialTx = createMiningTransaction [(wEmployer, 100)]
+      prop "employer tries to get their money back by pretending to be the arbiter" $
+        \(Different3 (employerKP, employeeKP, arbiterKP), jobOffer') -> do
+        let 
+            keypairs = [employerKP, employeeKP, arbiterKP]
+            wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
+            initialTx = createMiningTransaction [(wEmployer, joPayout jobOffer)]
 
-          jobOffer = JobOffer "description" 100 (WalletAPI.pubKey employerKP)
-          jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
-         
-          (result, state) = Emulator.runTraceTxPool [initialTx] $ do
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf 100)
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ escrowRejectArbiter jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              pure ()
+            jobOffer = jobOffer' { joOfferer = WalletAPI.pubKey employerKP }
+            jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
+           
+            (result, state) = Emulator.runTraceTxPool [initialTx] $ do
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf $ joPayout jobOffer)
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployer $ escrowRejectArbiter jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                pure ()
 
-      result `shouldSatisfy` isRight
-      getEmulatorErrors state `shouldBe` [Ledger.ScriptFailure ["Bad reject by arbiter"]]
-      resultingFunds state wEmployee `shouldBe` 0
-      resultingFunds state wArbiter `shouldBe` 0
-      resultingFunds state wEmployer `shouldBe` 0
+        result `shouldSatisfy` isRight
+        getEmulatorErrors state `shouldBe` [Ledger.ScriptFailure ["Bad reject by arbiter"]]
+        resultingFunds state wEmployee `shouldBe` 0
+        resultingFunds state wArbiter `shouldBe` 0
+        resultingFunds state wEmployer `shouldBe` 0
 
-    it "employer creates an escrow, employee tries to get the money by pretending to be the arbiter" $ do
-      let 
-          keypairs@[employerKP, employeeKP, arbiterKP] = WalletAPI.keyPair <$> [1, 2, 3]
-          wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
-          initialTx = createMiningTransaction [(wEmployer, 100)]
+      prop "employee tries to get the money by pretending to be the arbiter" $
+        \(Different3 (employerKP, employeeKP, arbiterKP), jobOffer') -> do
+        let 
+            keypairs = [employerKP, employeeKP, arbiterKP]
+            wallets@[wEmployer, wEmployee, wArbiter] = (walletFromPubKey . WalletAPI.pubKey) <$> keypairs
+            initialTx = createMiningTransaction [(wEmployer, joPayout jobOffer)]
 
-          jobOffer = JobOffer "description" 100 (WalletAPI.pubKey employerKP)
-          jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
-         
-          (result, state) = Emulator.runTraceTxPool [initialTx] $ do
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf 100)
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              _ <- Emulator.walletAction wEmployee $ escrowAcceptArbiter jobOffer jobApplication
-              _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-              pure ()
+            jobOffer = jobOffer' { joOfferer = WalletAPI.pubKey employerKP }
+            jobApplication = JobApplication (WalletAPI.pubKey employeeKP)
+           
+            (result, state) = Emulator.runTraceTxPool [initialTx] $ do
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf $ joPayout jobOffer)
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                _ <- Emulator.walletAction wEmployee $ escrowAcceptArbiter jobOffer jobApplication
+                _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
+                pure ()
 
-      result `shouldSatisfy` isRight
-      getEmulatorErrors state `shouldBe` [Ledger.ScriptFailure ["Bad acceptance by arbiter"]]
-      resultingFunds state wEmployee `shouldBe` 0
-      resultingFunds state wArbiter `shouldBe` 0
-      resultingFunds state wEmployer `shouldBe` 0
+        result `shouldSatisfy` isRight
+        getEmulatorErrors state `shouldBe` [Ledger.ScriptFailure ["Bad acceptance by arbiter"]]
+        resultingFunds state wEmployee `shouldBe` 0
+        resultingFunds state wArbiter `shouldBe` 0
+        resultingFunds state wEmployer `shouldBe` 0
+
+    prop "failure" $ \(Different3 (a,b,c) :: Different3 Int) -> do
+      a `shouldNotBe` b
+      a `shouldNotBe` c
+      b `shouldNotBe` c
 
 walletFromPubKey :: Ledger.PubKey -> Emulator.Wallet
 walletFromPubKey (Ledger.PubKey x) = Emulator.Wallet x
