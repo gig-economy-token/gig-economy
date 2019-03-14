@@ -7,7 +7,7 @@
 /favicon.ico FaviconR GET
 /robots.txt RobotsR GET
 
-/ HomeR GET
+/                           HomeR GET
 
 /status                     BlockchainStatusR GET POST
 
@@ -21,10 +21,17 @@
 /job/employer               EmployerR GET
 /job/employer/postOffer     EmployerPostOfferR POST
 /job/employer/closeOffer    EmployerCloseOfferR POST
+/job/employer/startEscrow   EmployerStartEscrowR POST
+/job/employer/acceptEscrow  EmployerAcceptEscrowR POST
 
 /job/employee               EmployeeR GET
 /job/employee/subscribe     EmployeeSubscribeR POST
 /job/employee/acceptOffer   EmployeeAcceptOfferR POST
+/job/employee/rejectEscrow  EmployeeRejectEscrowR POST
+
+/job/arbiter                ArbiterR GET
+/job/arbiter/acceptEscrow   ArbiterAcceptEscrowR POST
+/job/arbiter/rejectEscrow   ArbiterRejectEscrowR POST
 
 /comments CommentR POST
 

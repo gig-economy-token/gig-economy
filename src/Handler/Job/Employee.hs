@@ -31,5 +31,10 @@ postEmployeeAcceptOfferR = do
 
 postEmployeeSubscribeR :: Handler Html
 postEmployeeSubscribeR = do
-          doOnBlockchain subscribeToJobBoard
-          renderLayout
+      doOnBlockchain subscribeToJobBoard
+      renderLayout
+
+postEmployeeRejectEscrowR :: Handler Html
+postEmployeeRejectEscrowR = do
+      _ <- error "Implement"
+      renderLayout

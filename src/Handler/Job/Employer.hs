@@ -1,9 +1,5 @@
 {-# LANGUAGE NoImplicitPrelude  #-}
-module Handler.Job.Employer
-  ( getEmployerR
-  , postEmployerPostOfferR
-  , postEmployerCloseOfferR
-  ) where
+module Handler.Job.Employer where
 
 import Import
 
@@ -53,3 +49,13 @@ postEmployerCloseOfferR = do
         renderLayout (widget, enctype)
     FormMissing -> renderLayout (widget, enctype)
     FormFailure _ -> renderLayout (widget, enctype)
+
+postEmployerStartEscrowR :: Handler Html
+postEmployerStartEscrowR = do
+  _ <- error "Implement"
+  getEmployerR
+
+postEmployerAcceptEscrowR :: Handler Html
+postEmployerAcceptEscrowR = do
+  _ <- error "Implement"
+  getEmployerR
