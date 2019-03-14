@@ -3,17 +3,43 @@
     <div .row>
       <div .col-lg-12>
         <div .page-header>
-          <h1>Employee
-          $case offers
-            $of Nothing
-              <p>You are not subscribed yet!
-                <form method=POST action=@{EmployeeSubscribeR}>
-                  <button .btn.btn-primary.form-control type="submit">Subscribe to job board
-            $of Just (JobBoard [])
-              <p>No offers yet
-            $of Just (JobBoard ofs)
-              $forall (o, (w, e)) <- ofs
-                <form method=POST action=@{EmployeeAcceptOfferR} enctype=#{e}>
+          <h1>Arbiter
+          <h2>Escrows being monitored
+          $case escrows
+            $of []
+              <p>No escrows being monitored
+            $of xs
+              $forall EscrowUI o a (w, e) <- xs
+                <ul>
+                  <li>Offer: #{show o}
+                  <li>Application: #{show a}
+                <form method=POST action=@{ArbiterAcceptEscrowR} enctype=#{e}>
                   ^{w}
-                  Offer: #{show o}
-                  <button .btn.btn-primary type="submit">Apply to offer
+                  <button .btn.btn-primary type="submit">Accept escrow and send money to freelancer
+                <form method=POST action=@{ArbiterRejectEscrowR} enctype=#{e}>
+                  ^{w}
+                  <button .btn.btn-primary type="submit">Reject escrow and send money back to employer
+          <h2>Employer - Freelance activity
+          $case activity
+            $of NotSubscribed
+              <p>You are not subscribed to the main job board!
+                <form method=POST action=@{ArbiterSubscribeToMainJobBoardR}>
+                  <button .btn.btn-primary.form-control type="submit">Subscribe to job board
+            $of Jobs []
+              <p>No jobs available yet
+            $of Jobs xs
+              $forall x <- xs
+                $case x
+                  $of JobWithApplications o ax
+                    <p> Offer: #{show o}
+                    <ul>
+                      $forall (a, w, e) <- ax
+                        <li>Application: #{show a}
+                          <form method=POST action=@{ArbiterMonitorEscrowR} enctype=#{e}>
+                            ^{w}
+                            <button .btn.btn-primary type="submit">Monitor Escrow
+                  $of JobNotSubscribed o (w, e)
+                    <p> Offer: #{show o}
+                    <form method=POST action=@{ArbiterMonitorApplicantsR} enctype=#{e}>
+                      ^{w}
+                      <button .btn.btn-primary type="submit">Monitor Applicants

@@ -9,15 +9,35 @@ import Wallet.Emulator
 import Cardano.Html.Emulator
 import Cardano.Emulator.Job
 import Handler.Job.Arbiter.View
--- import Handler.Job.Forms
--- import Cardano.JobContract
+import Handler.Job.Forms
+import Cardano.JobContract
 
 doOnBlockchain :: HasSimulatedChain m => MockWallet () -> m ()
 doOnBlockchain op = appendStepAndNotifyKnownWallets (walletAction arbiterWallet op)
 
 getArbiterR :: Handler Html
 getArbiterR = do
-      _ <- error "Implement"
+      renderLayout
+
+postArbiterSubscribeToMainJobBoardR :: Handler Html
+postArbiterSubscribeToMainJobBoardR = do
+      doOnBlockchain subscribeToJobBoard
+      renderLayout
+
+postArbiterMonitorApplicantsR :: Handler Html
+postArbiterMonitorApplicantsR = do
+      ((result, _), _) <- runFormPost (hiddenJobOfferForm Nothing)
+      case result of
+        FormSuccess offer -> doOnBlockchain (subscribeToJobApplicationBoard offer)
+        _ -> pure ()
+      renderLayout
+
+postArbiterMonitorEscrowR :: Handler Html
+postArbiterMonitorEscrowR = do
+      ((result, _), _) <- runFormPost (hiddenJobEscrowForm Nothing)
+      case result of
+        FormSuccess (offer, application) -> doOnBlockchain (subscribeToEscrow offer application)
+        _ -> pure ()
       renderLayout
 
 postArbiterAcceptEscrowR :: Handler Html

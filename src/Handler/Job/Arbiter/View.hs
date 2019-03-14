@@ -6,27 +6,47 @@ module Handler.Job.Arbiter.View where
 
 import Import
 import Wallet.Emulator
+import Wallet.Emulator.AddressMap
 import Cardano.JobContract
 import Cardano.Emulator.Job
 import Cardano.Html.Emulator
 import Handler.Job.Forms
 
+data EscrowUI = EscrowUI JobOffer JobApplication (Widget, Enctype)
+data JobWithApplications
+  = JobWithApplications JobOffer [(JobApplication, Widget, Enctype)]
+  | JobNotSubscribed JobOffer (Widget, Enctype)
+
+data JobBoardActivity
+  = NotSubscribed
+  | Jobs [JobWithApplications]
+
 renderLayout :: Handler Html
 renderLayout = do
-    offers <- mkJobBoard employeeWallet
+    escrows <- pure [] --mkJobBoard employeeWallet
+    activity <- mkJobBoard arbiterWallet
     defaultLayout $ do
         $(widgetFile "job/arbiter")
 
 newtype JobBoard = JobBoard [(JobOffer, (Widget, Enctype))]
 
-mkJobBoard :: Wallet -> Handler (Maybe JobBoard)
+
+mkJobBoard :: Wallet -> Handler JobBoardActivity
 mkJobBoard w = do
                 am <- readWatchedAddresses w
                 let offers = extractJobOffers am
                 case offers of
-                  Just o -> do
-                        offersWithForms <- forM o $ \offer -> do
-                                (widget, enctype) <- generateFormPost (hiddenJobOfferForm (Just offer))
-                                pure (offer, (widget, enctype))
-                        pure $ Just $ JobBoard offersWithForms
-                  Nothing -> pure Nothing
+                  Nothing -> pure NotSubscribed
+                  Just ox -> Jobs <$> mapM (mkOfferApplicationForm am) ox
+  where
+    mkOfferApplicationForm :: AddressMap -> JobOffer -> Handler JobWithApplications
+    mkOfferApplicationForm am offer = do
+            case extractJobApplications am offer of
+              Nothing -> do
+                          we <- generateFormPost (hiddenJobOfferForm (Just offer))
+                          pure $ JobNotSubscribed offer we
+              Just apps -> do
+                  applications <- forM apps (\app -> do
+                                        (widget, enctype) <- generateFormPost (hiddenJobEscrowForm $ Just (offer, app))
+                                        pure (app, widget, enctype))
+                  pure $ JobWithApplications offer applications

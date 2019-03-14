@@ -8,6 +8,7 @@ module Cardano.JobContract.Actions
   , closeOffer
   , applyToOffer
   , subscribeToJobBoard
+  , subscribeToJobApplicationBoard
   , parseJobOffer
   , parseJobApplication
   , extractJobOffers
@@ -44,7 +45,7 @@ postOffer jof = do
     pk <- pubKey <$> myKeyPair
     let offer = toJobOffer jof pk
     let ds = DataScript (Ledger.lifted offer)
-    startWatching (jobAddress offer)
+    subscribeToJobApplicationBoard offer
     _ <- payToScript defaultSlotRange jobBoardAddress ($$(adaValueOf) 0) ds
     pure ()
 
@@ -86,6 +87,9 @@ applyToOffer offer = do
 
 subscribeToJobBoard :: WalletAPI m => m ()
 subscribeToJobBoard = startWatching jobBoardAddress
+
+subscribeToJobApplicationBoard :: WalletAPI m => JobOffer -> m ()
+subscribeToJobApplicationBoard offer = startWatching (jobAddress offer)
 
 parseJobOffer :: DataScript -> Maybe JobOffer
 parseJobOffer ds = JobOffer <$> desc <*> payout <*> pk
