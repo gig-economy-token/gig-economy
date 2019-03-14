@@ -9,6 +9,7 @@ module Cardano.Html.Emulator
   , readEmulatorState
   , readWatchedAddresses
   , readWatchedAddresses'
+  , runOnBlockchain
   ) where
 
 import Import
@@ -72,3 +73,6 @@ appendStepAndNotifyKnownWallets newStep = appendStep stepAndNotify
 -- Only for HasSimulatedChain Handler
 readSimulatedChainRef :: MonadReader (HandlerData c App) m => m (IORef SimulatedChain)
 readSimulatedChainRef = (simulatedChain . rheSite . handlerEnv) <$> ask
+
+runOnBlockchain :: HasSimulatedChain m => Wallet -> MockWallet () -> m ()
+runOnBlockchain w op = appendStepAndNotifyKnownWallets (walletAction w op)

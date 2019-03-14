@@ -13,7 +13,7 @@ import Handler.Job.Forms
 import Cardano.JobContract
 
 doOnBlockchain :: HasSimulatedChain m => MockWallet () -> m ()
-doOnBlockchain op = appendStepAndNotifyKnownWallets (walletAction arbiterWallet op)
+doOnBlockchain op = runOnBlockchain arbiterWallet op
 
 getArbiterR :: Handler Html
 getArbiterR = do

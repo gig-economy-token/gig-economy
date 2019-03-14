@@ -15,7 +15,7 @@ import qualified Wallet.API
 import qualified Data.ByteString.Lazy.Char8 as B8
 
 doOnBlockchain :: HasSimulatedChain m => MockWallet () -> m ()
-doOnBlockchain op = appendStepAndNotifyKnownWallets (walletAction employerWallet op)
+doOnBlockchain op = runOnBlockchain employerWallet op
 
 jobOfferForm :: Html -> MForm Handler (FormResult JobOfferForm, Widget)
 jobOfferForm = renderDivs $ JobOfferForm
