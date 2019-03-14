@@ -4,6 +4,7 @@
       <div .col-lg-12>
         <div .page-header>
           <h1>Employer
+          <p>Funds: ADA#{funds}
           $case acceptanceListing
             $of []
               No jobs posted yet.
@@ -13,8 +14,11 @@
                   <li>
                     #{show $ jeOffer offer}
                     <ul>
-                      $forall a <- jeApplications offer
+                      $forall (a, w, e) <- jeApplications offer
                         <li>#{show a}
+                          <form method=POST action=@{EmployerStartEscrowR} enctype=#{e}>
+                            ^{w}
+                            <button .btn.btn-default.form-control type="submit">Start escrow
                     <form method=POST action=@{EmployerCloseOfferR} enctype=#{snd $ jeForm offer}>
                       ^{fst $ jeForm offer}
                       <button .btn.btn-danger.form-control type="submit">Close job offer

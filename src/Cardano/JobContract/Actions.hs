@@ -83,6 +83,7 @@ applyToOffer offer = do
                         jaAcceptor = pk
                       }
     let ds = DataScript (Ledger.lifted application)
+    subscribeToEscrow offer application
     payToScript_ defaultSlotRange (jobAddress offer) ($$(adaValueOf) 0) ds
 
 subscribeToJobBoard :: WalletAPI m => m ()

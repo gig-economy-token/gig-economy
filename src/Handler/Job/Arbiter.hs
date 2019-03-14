@@ -42,10 +42,16 @@ postArbiterMonitorEscrowR = do
 
 postArbiterAcceptEscrowR :: Handler Html
 postArbiterAcceptEscrowR = do
-      _ <- error "Implement"
+      ((result, _), _) <- runFormPost (hiddenJobEscrowForm Nothing)
+      case result of
+        FormSuccess (offer, application) -> doOnBlockchain (escrowAcceptArbiter offer application)
+        _ -> pure ()
       renderLayout
 
 postArbiterRejectEscrowR :: Handler Html
 postArbiterRejectEscrowR = do
-      _ <- error "Implement"
+      ((result, _), _) <- runFormPost (hiddenJobEscrowForm Nothing)
+      case result of
+        FormSuccess (offer, application) -> doOnBlockchain (escrowRejectArbiter offer application)
+        _ -> pure ()
       renderLayout

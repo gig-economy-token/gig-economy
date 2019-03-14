@@ -10,10 +10,14 @@ import Cardano.JobContract
 import Cardano.Emulator.Job
 import Cardano.Html.Emulator
 import Handler.Job.Forms
+import qualified Data.Map as Map
+import Cardano.Helpers
 
 renderLayout :: Handler Html
 renderLayout = do
     offers <- mkJobBoard employeeWallet
+    es <- readEmulatorState
+    let funds = fromMaybe 0 $ getResultingFunds <$> Map.lookup employeeWallet (_walletStates es)
     defaultLayout $ do
         $(widgetFile "job/employee")
 

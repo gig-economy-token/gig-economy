@@ -11,6 +11,8 @@ import Cardano.JobContract
 import Cardano.Emulator.Job
 import Cardano.Html.Emulator
 import Handler.Job.Forms
+import qualified Data.Map as Map
+import Cardano.Helpers
 
 data EscrowUI = EscrowUI JobOffer JobApplication (Widget, Enctype)
 data JobWithApplications
@@ -23,8 +25,10 @@ data JobBoardActivity
 
 renderLayout :: Handler Html
 renderLayout = do
-    escrows <- pure [] --mkJobBoard employeeWallet
+    escrows <- mkEscrows arbiterWallet
     activity <- mkJobBoard arbiterWallet
+    es <- readEmulatorState
+    let funds = fromMaybe 0 $ getResultingFunds <$> Map.lookup arbiterWallet (_walletStates es)
     defaultLayout $ do
         $(widgetFile "job/arbiter")
 
@@ -50,3 +54,20 @@ mkJobBoard w = do
                                         (widget, enctype) <- generateFormPost (hiddenJobEscrowForm $ Just (offer, app))
                                         pure (app, widget, enctype))
                   pure $ JobWithApplications offer applications
+
+mkEscrows :: Wallet -> Handler [EscrowUI]
+mkEscrows wallet = do
+  am <- readWatchedAddresses wallet
+  let offers = fromMaybe [] $ extractJobOffers am
+      applications = (\x -> (x, extractJobApplications am x)) <$> offers
+
+  escrows <- forM applications $ \(o, max') ->
+                  case max' of
+                    Nothing -> pure []
+                    Just ax -> do
+                              forM ax (\a -> do
+                                          
+                                          (w, e) <- generateFormPost (hiddenJobEscrowForm $ Just (o, a))
+                                          pure $ EscrowUI o a (w, e))
+
+  pure $ concat escrows

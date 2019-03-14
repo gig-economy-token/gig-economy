@@ -4,11 +4,14 @@ module Handler.Job.Employer where
 import Import
 
 import Handler.Job.Employer.View
+import Handler.Job.Forms
 import Yesod.Form.Bootstrap3
 import Cardano.JobContract
 import Cardano.Emulator.Job
 import Cardano.Html.Emulator
 import Wallet.Emulator
+import Ledger.Ada
+import qualified Wallet.API
 import qualified Data.ByteString.Lazy.Char8 as B8
 
 doOnBlockchain :: HasSimulatedChain m => MockWallet () -> m ()
@@ -52,10 +55,16 @@ postEmployerCloseOfferR = do
 
 postEmployerStartEscrowR :: Handler Html
 postEmployerStartEscrowR = do
-  _ <- error "Implement"
+  ((result, _), _) <- runFormPost (hiddenJobEscrowForm Nothing)
+  case result of
+    FormSuccess (job, application) -> doOnBlockchain (createEscrow job application (Wallet.API.PubKey (getWallet arbiterWallet)) (adaValueOf $ joPayout job))
+    _ -> pure ()
   getEmployerR
 
 postEmployerAcceptEscrowR :: Handler Html
 postEmployerAcceptEscrowR = do
-  _ <- error "Implement"
+  ((result, _), _) <- runFormPost (hiddenJobEscrowForm Nothing)
+  case result of
+    FormSuccess (job, application) -> doOnBlockchain (escrowAcceptEmployer job application)
+    _ -> pure ()
   getEmployerR
