@@ -19,10 +19,14 @@ renderLayout (postOfferForm, postOfferEnctype) = do
     defaultLayout $ do
         $(widgetFile "job/employer")
 
+data Escrow
+  = NoEscrow (Widget, Enctype)
+  | EscrowStarted (Widget, Enctype)
+
 data JobEntry = JobEntry
   { jeOffer :: JobOffer
   , jeForm :: (Widget, Enctype)
-  , jeApplications :: [(JobApplication, Widget, Enctype)]
+  , jeApplications :: [(JobApplication, Escrow)]
   }
 
 mkAcceptanceListing :: Handler [JobEntry]
@@ -42,7 +46,8 @@ mkAcceptanceListing =
                 , jeForm = (widget, enctype)
                 , jeApplications = applicationsWithForms
                 }
-    mkEscrowWithForm :: JobOffer -> JobApplication -> Handler (JobApplication, Widget, Enctype)
+    mkEscrowWithForm :: JobOffer -> JobApplication -> Handler (JobApplication, Escrow)
     mkEscrowWithForm o a = do
-                   (widget, enctype) <- generateFormPost (hiddenJobEscrowForm (Just (o, a)))
-                   pure (a, widget, enctype)
+              we <- generateFormPost (hiddenJobEscrowForm (Just (o, a)))
+              --FIXME: figure out how to read currently-active escrows
+              pure $ (a, NoEscrow we)

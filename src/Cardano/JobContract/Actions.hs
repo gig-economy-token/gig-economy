@@ -131,30 +131,30 @@ parseJobApplication ds = JobApplication <$> acceptor
 
 extractJobOffers :: AddressMap -> Maybe [JobOffer]
 extractJobOffers (AddressMap am) = do
-                                              addresses <- Map.lookup jobBoardAddress am
-                                              pure $ catMaybes $ parseOffer <$> Map.toList addresses
-  where
-    parseOffer :: (TxOutRef, TxOut) -> Maybe JobOffer
-    parseOffer (_, tx) = do
-                      ds <- extractDataScript (txOutType tx)
-                      parseJobOffer ds
-    extractDataScript :: TxOutType -> Maybe DataScript
-    extractDataScript (PayToScript s) = Just s
-    extractDataScript _               = Nothing
+                              addresses <- Map.lookup jobBoardAddress am
+                              pure $ catMaybes $ (parseTx parseJobOffer) <$> Map.elems addresses
 
 
 extractJobApplications :: AddressMap -> JobOffer -> Maybe [JobApplication]
 extractJobApplications (AddressMap am) jobOffer = do
-                                              addresses <- Map.lookup (jobAddress jobOffer) am
-                                              pure $ catMaybes $ parseAcc <$> Map.toList addresses
+                              addresses <- Map.lookup (jobAddress jobOffer) am
+                              pure $ catMaybes $ (parseTx parseJobApplication) <$> Map.elems addresses
+
+extractJobEscrows :: AddressMap -> JobOffer -> Maybe [JobApplication]
+extractJobEscrows (AddressMap am) jobOffer = do
+                              addresses <- Map.lookup (jobAddress jobOffer) am
+                              pure $ catMaybes $ (parseTx parseJobApplication) <$> Map.elems addresses
+
+
+parseTx :: (DataScript -> Maybe a) -> TxOut -> Maybe a
+parseTx f tx = do
+                ds <- extractDataScript (txOutType tx)
+                f ds
   where
-    parseAcc :: (TxOutRef, TxOut) -> Maybe JobApplication
-    parseAcc (_, tx) = do
-                      ds <- extractDataScript (txOutType tx)
-                      parseJobApplication ds
     extractDataScript :: TxOutType -> Maybe DataScript
     extractDataScript (PayToScript s) = Just s
     extractDataScript _               = Nothing
+
 
 subscribeToEscrow :: WalletAPI m => JobOffer -> JobApplication -> m ()
 subscribeToEscrow jo ja = startWatching (jobEscrowAddress jo ja)

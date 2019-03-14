@@ -36,5 +36,8 @@ postEmployeeSubscribeR = do
 
 postEmployeeRejectEscrowR :: Handler Html
 postEmployeeRejectEscrowR = do
-      _ <- error "Implement"
+      ((result, _), _) <- runFormPost (hiddenJobEscrowForm Nothing)
+      case result of
+        FormSuccess (job, application) -> doOnBlockchain (escrowRejectEmployee job application)
+        _ -> pure ()
       renderLayout
