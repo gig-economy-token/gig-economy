@@ -11,8 +11,6 @@ import Cardano.JobContract
 import Cardano.Emulator.Job
 import Cardano.Html.Emulator
 import Handler.Job.Forms
-import qualified Data.Map as Map
-import Cardano.Helpers
 
 data EscrowUI = EscrowUI JobOffer JobApplication (Widget, Enctype)
 data JobWithApplications
@@ -27,8 +25,7 @@ renderLayout :: Handler Html
 renderLayout = do
     escrows <- mkEscrows arbiterWallet
     activity <- mkJobBoard arbiterWallet
-    es <- readEmulatorState
-    let funds = fromMaybe 0 $ getResultingFunds <$> Map.lookup arbiterWallet (_walletStates es)
+    funds <- fundsInWallet arbiterWallet
     defaultLayout $ do
         $(widgetFile "job/arbiter")
 

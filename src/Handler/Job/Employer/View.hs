@@ -11,15 +11,11 @@ import Cardano.Emulator.Job
 import Cardano.Html.Emulator
 import Handler.Job.Forms
 import Wallet.Emulator.AddressMap
-import Wallet.Emulator
-import Cardano.Helpers
-import qualified Data.Map as Map
 
 renderLayout :: (Widget, Enctype) -> Handler Html
 renderLayout (postOfferForm, postOfferEnctype) = do
     acceptanceListing <- mkAcceptanceListing
-    es <- readEmulatorState
-    let funds = fromMaybe 0 $ getResultingFunds <$> Map.lookup employerWallet (_walletStates es)
+    funds <- fundsInWallet employerWallet
     defaultLayout $ do
         $(widgetFile "job/employer")
 

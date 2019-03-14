@@ -10,6 +10,7 @@ module Cardano.Html.Emulator
   , readWatchedAddresses
   , readWatchedAddresses'
   , runOnBlockchain
+  , fundsInWallet
   ) where
 
 import Import
@@ -19,6 +20,7 @@ import Wallet.Emulator.AddressMap
 import qualified Data.Map as Map
 
 import Cardano.Emulator
+import Cardano.Helpers
 
 class Monad m => HasSimulatedChain m where
   readSimulatedChain    :: m SimulatedChain
@@ -76,3 +78,9 @@ readSimulatedChainRef = (simulatedChain . rheSite . handlerEnv) <$> ask
 
 runOnBlockchain :: HasSimulatedChain m => Wallet -> MockWallet () -> m ()
 runOnBlockchain w op = appendStepAndNotifyKnownWallets (walletAction w op)
+
+fundsInWallet :: HasSimulatedChain m => Wallet -> m (Int)
+fundsInWallet w = do
+                    es <- readEmulatorState
+                    let funds = fromMaybe 0 $ getResultingFunds <$> Map.lookup w (_walletStates es)
+                    pure funds
