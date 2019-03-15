@@ -36,7 +36,7 @@ postArbiterMonitorEscrowR :: Handler Html
 postArbiterMonitorEscrowR = do
       ((result, _), _) <- runFormPost (hiddenJobEscrowForm Nothing)
       case result of
-        FormSuccess (offer, application) -> doOnBlockchain (subscribeToEscrow offer application)
+        FormSuccess (_offer, _application) -> doOnBlockchain subscribeToEscrow
         _ -> pure ()
       renderLayout
 

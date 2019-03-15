@@ -81,11 +81,9 @@ jobAcceptanceBoard = ValidatorScript ($$(Ledger.compileScript [||
     ()  -- FIXME: We don't validate anything!
   ||]))
 
-jobEscrow' :: ValidatorScript
-jobEscrow' = ValidatorScript ($$(Ledger.compileScript [||
-  \ (_ :: JobOffer)         -- For creating a unique address for the escrow
-    (_ :: JobApplication)   -- For creating a unique address for the escrow
-    (result :: EscrowResult)
+jobEscrowContract :: ValidatorScript
+jobEscrowContract = ValidatorScript ($$(Ledger.compileScript [||
+  \ (result :: EscrowResult)
     (setup :: EscrowSetup)
     (tx :: Validation.PendingTx)
     ->
@@ -155,13 +153,5 @@ jobAddress jobOffer = Ledger.scriptAddress (ValidatorScript sc)
   where
     sc = (getValidator jobAcceptanceBoard) `applyScript` (Ledger.lifted jobOffer)
 
-jobEscrowAddress :: JobOffer -> JobApplication -> Address
-jobEscrowAddress jobOffer jobApplication = Ledger.scriptAddress (jobEscrowContract jobOffer jobApplication)
-
-jobEscrowContract :: JobOffer -> JobApplication -> ValidatorScript
-jobEscrowContract jobOffer jobApplication = (ValidatorScript sc)
-  where
-    offerScript = Ledger.lifted jobOffer
-    applicationScript = Ledger.lifted jobApplication
-    escrowScript = getValidator jobEscrow'
-    sc = (escrowScript `applyScript` offerScript) `applyScript` applicationScript
+jobEscrowAddress :: Address
+jobEscrowAddress = Ledger.scriptAddress jobEscrowContract

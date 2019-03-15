@@ -23,6 +23,7 @@ module Cardano.JobContract.Actions
   ) where
 
 import Prelude hiding ((++))
+import Control.Monad (guard)
 import Control.Lens
 import           Ledger hiding (inputs, out, getPubKey)
 import           Ledger.Ada.TH as Ada
@@ -84,7 +85,7 @@ applyToOffer offer = do
                         jaAcceptor = pk
                       }
     let ds = DataScript (Ledger.lifted application)
-    subscribeToEscrow offer application
+    subscribeToEscrow
     payToScript_ defaultSlotRange (jobAddress offer) ($$(adaValueOf) 0) ds
 
 subscribeToJobBoard :: WalletAPI m => m ()
@@ -93,8 +94,8 @@ subscribeToJobBoard = startWatching jobBoardAddress
 subscribeToJobApplicationBoard :: WalletAPI m => JobOffer -> m ()
 subscribeToJobApplicationBoard offer = startWatching (jobAddress offer)
 
-subscribeToEscrow :: WalletAPI m => JobOffer -> JobApplication -> m ()
-subscribeToEscrow jo ja = startWatching (jobEscrowAddress jo ja)
+subscribeToEscrow :: WalletAPI m => m ()
+subscribeToEscrow = startWatching jobEscrowAddress
 
 applyEvalScript :: Script -> Script -> EvaluationResultDef
 applyEvalScript s1 s2 = evaluateCek (scriptToUnderlyingScript (s1 `applyScript` s2))
@@ -158,7 +159,7 @@ parseTx f tx = do
     extractDataScript _               = Nothing
 
 createEscrow :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> JobApplication -> PubKey -> Value ->  m ()
-createEscrow offer application arbiterPubKey cost = payToScript_ defaultSlotRange (jobEscrowAddress offer application) cost ds
+createEscrow offer application arbiterPubKey cost = payToScript_ defaultSlotRange jobEscrowAddress cost ds
   where
     setup = EscrowSetup
                 { esJobOffer = offer
@@ -171,37 +172,111 @@ escrowAcceptEmployer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> JobApp
 escrowAcceptEmployer offer application = do
     kp <- myKeyPair
     let action = EscrowAcceptedByEmployer (signature kp)
-    let rs = RedeemerScript (Ledger.lifted action)
-    collectFromScriptToPubKey defaultSlotRange (jobEscrowContract offer application) rs (jaAcceptor application)
+        rs = RedeemerScript (Ledger.lifted action)
+    collectMatchingFromScriptToPubKey defaultSlotRange jobEscrowContract rs (matchesEscrow offer application) (jaAcceptor application)
 
 escrowRejectEmployee :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> JobApplication -> m ()
 escrowRejectEmployee offer application = do
     kp <- myKeyPair
     let action = EscrowRejectedByEmployee (signature kp)
-    let rs = RedeemerScript (Ledger.lifted action)
-    collectFromScriptToPubKey defaultSlotRange (jobEscrowContract offer application) rs (joOfferer offer)
+        rs = RedeemerScript (Ledger.lifted action)
+    collectMatchingFromScriptToPubKey defaultSlotRange jobEscrowContract rs (matchesEscrow offer application) (joOfferer offer)
 
 escrowAcceptArbiter :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> JobApplication -> m ()
 escrowAcceptArbiter offer application = do
     kp <- myKeyPair
     let action = EscrowAcceptedByArbiter (signature kp)
-    let rs = RedeemerScript (Ledger.lifted action)
-    collectFromScriptToPubKey defaultSlotRange (jobEscrowContract offer application) rs (jaAcceptor application)
+        rs = RedeemerScript (Ledger.lifted action)
+    collectMatchingFromScriptToPubKey defaultSlotRange jobEscrowContract rs (matchesEscrow offer application) (jaAcceptor application)
 
 escrowRejectArbiter :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> JobApplication -> m ()
 escrowRejectArbiter offer application = do
     kp <- myKeyPair
     let action = EscrowRejectedByArbiter (signature kp)
-    let rs = RedeemerScript (Ledger.lifted action)
-    collectFromScriptToPubKey defaultSlotRange (jobEscrowContract offer application) rs (joOfferer offer)
+        rs = RedeemerScript (Ledger.lifted action)
+    collectMatchingFromScriptToPubKey defaultSlotRange jobEscrowContract rs (matchesEscrow offer application) (joOfferer offer)
+
+matchesEscrow :: JobOffer -> JobApplication -> (TxOutRef, TxOut) -> Bool
+matchesEscrow offer application (_, tx) = isJust $ do
+                                      es <- parseTx parseJobEscrow tx
+                                      guard (esJobOffer es == offer)
+                                      guard (esJobApplication es == application)
+
+knownMatchingEscrowOutputs :: (WalletAPI m, WalletDiagnostics m) => EscrowSetup -> m [(TxOutRef, TxOut)]
+knownMatchingEscrowOutputs setup = do
+    (AddressMap am) <- watchedAddresses
+    let
+        outs :: [(TxOutRef, TxOut)]
+        outs = concat $ Map.toList <$> Map.elems am
+
+        isInterestingTx :: (TxOutRef, TxOut) -> Bool
+        isInterestingTx (_, tx) = case parseTx parseJobEscrow tx of
+                                        Just x -> x == setup 
+                                        Nothing -> False
+        outs' :: [(TxOutRef, TxOut)]
+        outs' = filter isInterestingTx outs
+        
+    pure outs'
+
+
 collectFromScriptToPubKey :: (Monad m, WalletAPI m) => SlotRange -> ValidatorScript -> RedeemerScript -> PubKey -> m ()
 collectFromScriptToPubKey range scr red destination = do
     am <- watchedAddresses
     let addr = scriptAddress scr
+        outputs' :: [(TxOutRef, TxOut)]
         outputs' = am ^. at addr . to (Map.toList . fromMaybe Map.empty)
+
+        con :: (TxOutRef, TxOut) -> TxIn
         con (r, _) = scriptTxIn r scr red
-        ins        = con <$> outputs'
+
+        ins :: [TxIn]
+        ins = con <$> outputs'
+
         value' = foldl' Value.plus Value.zero $ fmap (txOutValue . snd) outputs'
 
         oo = pubKeyTxOut value' destination
-    (const ()) <$> createTxAndSubmit range (Set.fromList ins) [oo]
+    _ <- createTxAndSubmit range (Set.fromList ins) [oo]
+    pure ()
+
+collectOutputsFromScriptToPubKey :: (Monad m, WalletAPI m) => SlotRange -> ValidatorScript -> RedeemerScript -> [(TxOutRef, TxOut)] -> PubKey -> m ()
+collectOutputsFromScriptToPubKey range scr red outputs' destination = do
+    let
+        con :: (TxOutRef, TxOut) -> TxIn
+        con (r, _) = scriptTxIn r scr red
+
+        ins :: [TxIn]
+        ins = con <$> outputs'
+
+        value' = foldl' Value.plus Value.zero $ fmap (txOutValue . snd) outputs'
+
+        oo = pubKeyTxOut value' destination
+    _ <- createTxAndSubmit range (Set.fromList ins) [oo]
+    pure ()
+
+collectMatchingFromScriptToPubKey ::
+  (Monad m, WalletAPI m) =>
+  SlotRange ->                    -- Valid range
+  ValidatorScript ->              -- Validator
+  RedeemerScript ->               -- Redeemer to be used for all cases
+  ((TxOutRef, TxOut) -> Bool) ->  -- Predicate to decide which outputs to be collected
+  PubKey ->                       -- Destination
+  m ()
+collectMatchingFromScriptToPubKey range scr red p destination = do
+    am <- watchedAddresses
+    let
+        addr = scriptAddress scr
+
+        outputs' :: [(TxOutRef, TxOut)]
+        outputs' = filter p $ am ^. at addr . to (Map.toList . fromMaybe Map.empty)
+
+        con :: (TxOutRef, TxOut) -> TxIn
+        con (r, _) = scriptTxIn r scr red
+
+        ins :: [TxIn]
+        ins = con <$> outputs'
+
+        value' = foldl' Value.plus Value.zero $ fmap (txOutValue . snd) outputs'
+
+        oo = pubKeyTxOut value' destination
+    _ <- createTxAndSubmit range (Set.fromList ins) [oo]
+    pure ()

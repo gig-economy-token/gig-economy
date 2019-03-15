@@ -31,15 +31,11 @@ cathegoriesSpec :: Spec
 cathegoriesSpec = do
   describe "parseJobOffer" $ do
     prop "fromJust . parseJobOffer . Ledger.lifted == id :: JobOffer -> JobOffer" $ \jobOffer -> do
-      let datascript = Ledger.DataScript (Ledger.lifted jobOffer)
-          jobOffer' = parseJobOffer datascript
-      jobOffer' `shouldBe` Just jobOffer
+      parseJobOffer (Ledger.DataScript (Ledger.lifted jobOffer)) `shouldBe` Just jobOffer
 
   describe "parseJobApplication" $ do
     prop "fromJust . parseJobApplication . Ledger.lifted == id :: JobApplication -> JobApplication" $ \jobApplication -> do
-      let datascript = Ledger.DataScript (Ledger.lifted jobApplication)
-          jobApplication' = parseJobApplication datascript
-      jobApplication' `shouldBe` Just jobApplication
+      parseJobApplication (Ledger.DataScript (Ledger.lifted jobApplication)) `shouldBe` Just jobApplication
 
   describe "parseJobEscrow" $ do
     prop "fromJust . parseJobEscrow . Ledger.lifted == id :: EscrowSetup -> EscrowSetup" $ \escrowSetup -> do
@@ -123,7 +119,7 @@ escrowSpec = do
            
             (result, state) = Emulator.runTraceTxPool [initialTx] $ do
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
                 _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf (joPayout jobOffer'))
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
@@ -149,7 +145,7 @@ escrowSpec = do
            
             (result, state) = Emulator.runTraceTxPool [initialTx] $ do
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
                 _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf 100)
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
@@ -175,8 +171,8 @@ escrowSpec = do
 
             (result, state) = Emulator.runTraceTxPool [initialTx] $ do
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
-                _ <- Emulator.walletAction wArbiter $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow
+                _ <- Emulator.walletAction wArbiter $ subscribeToEscrow
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
                 _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf (joPayout jobOffer))
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
@@ -202,8 +198,8 @@ escrowSpec = do
 
             (result, state) = Emulator.runTraceTxPool [initialTx] $ do
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
-                _ <- Emulator.walletAction wArbiter $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow
+                _ <- Emulator.walletAction wArbiter $ subscribeToEscrow
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
                 _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf (joPayout jobOffer))
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
@@ -230,7 +226,7 @@ escrowSpec = do
            
             (result, state) = Emulator.runTraceTxPool [initialTx] $ do
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
                 _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf $ joPayout jobOffer)
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
@@ -256,7 +252,7 @@ escrowSpec = do
            
             (result, state) = Emulator.runTraceTxPool [initialTx] $ do
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
                 _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf $ joPayout jobOffer)
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
@@ -270,6 +266,7 @@ escrowSpec = do
         resultingFunds state wArbiter `shouldBe` 0
         resultingFunds state wEmployer `shouldBe` 0
 
+      -- FIXME: This test should actually test the smart contract, not the helper action
       prop "employer tries to get their money back by pretending to be the arbiter" $
         \(Different3 (employerKP, employeeKP, arbiterKP), jobOffer') -> do
         let 
@@ -282,7 +279,7 @@ escrowSpec = do
            
             (result, state) = Emulator.runTraceTxPool [initialTx] $ do
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
                 _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf $ joPayout jobOffer)
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
@@ -296,6 +293,7 @@ escrowSpec = do
         resultingFunds state wArbiter `shouldBe` 0
         resultingFunds state wEmployer `shouldBe` 0
 
+      -- FIXME: This test should actually test the smart contract, not the helper action
       prop "employee tries to get the money by pretending to be the arbiter" $
         \(Different3 (employerKP, employeeKP, arbiterKP), jobOffer') -> do
         let 
@@ -308,7 +306,7 @@ escrowSpec = do
            
             (result, state) = Emulator.runTraceTxPool [initialTx] $ do
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
-                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow jobOffer jobApplication
+                _ <- Emulator.walletAction wEmployee $ subscribeToEscrow
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
                 _ <- Emulator.walletAction wEmployer $ createEscrow jobOffer jobApplication (WalletAPI.pubKey arbiterKP) (Ada.adaValueOf $ joPayout jobOffer)
                 _ <- Emulator.processPending >>= Emulator.walletsNotifyBlock wallets
