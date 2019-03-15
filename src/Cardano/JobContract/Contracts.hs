@@ -117,8 +117,6 @@ jobEscrowContract = ValidatorScript ($$(Ledger.compileScript [||
       eqPubKey = $$(Validation.eqPubKey)
     in
     let
-      --txSignedBy = $$(Validation.txSignedBy)
-
       signedBy' :: Signature -> PubKey -> Bool
       signedBy' (Signature sig) (PubKey pk) = sig == pk
 

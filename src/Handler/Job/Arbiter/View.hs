@@ -1,7 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 module Handler.Job.Arbiter.View where
 
 import Import
@@ -35,19 +34,3 @@ mkEscrows wallet = do
     toEscrowUI (EscrowSetup {..}) = do
                     (w, e) <- generateFormPost (hiddenJobEscrowForm $ Just (esJobOffer, esJobApplication))
                     pure $ EscrowUI esJobOffer esJobApplication (w, e)
-    
-
-{-
-                (w, e) <- generateFormPost (hiddenJobEscrowForm $ Just (o, a))
-  let offers = fromMaybe [] $ extractJobOffers am
-      applications = (\x -> (x, extractJobApplications am x)) <$> offers
-
-  escrows <- forM applications $ \(o, max') ->
-                  case max' of
-                    Nothing -> pure []
-                    Just ax -> do
-                              forM ax (\a -> do
-                                          (w, e) <- generateFormPost (hiddenJobEscrowForm $ Just (o, a))
-                                          pure $ EscrowUI o a (w, e))
-
-  pure $ Escrows $ concat escrows-}
