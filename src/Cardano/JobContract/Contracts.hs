@@ -83,13 +83,22 @@ jobAcceptanceBoard = ValidatorScript ($$(Ledger.compileScript [||
 
 jobEscrow' :: ValidatorScript
 jobEscrow' = ValidatorScript ($$(Ledger.compileScript [||
-  \ (_ :: JobOffer)
-    (_ :: JobApplication)
+  \ (_ :: JobOffer)         -- For creating a unique address for the escrow
+    (_ :: JobApplication)   -- For creating a unique address for the escrow
     (result :: EscrowResult)
     (setup :: EscrowSetup)
     (tx :: Validation.PendingTx)
     ->
-    let EscrowSetup {esEmployer=employerPubKey, esEmployee=employeePubKey, esArbiter=arbiterPubKey} = setup in
+    let EscrowSetup {
+          esJobOffer=JobOffer {
+            joOfferer=employerPubKey
+          },
+          esJobApplication=JobApplication {
+            jaAcceptor=employeePubKey
+          },
+          esArbiter=arbiterPubKey
+        } = setup
+    in
     let Validation.PendingTx {
           pendingTxInputs=[
             Validation.PendingTxIn {

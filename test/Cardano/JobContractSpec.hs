@@ -41,6 +41,10 @@ cathegoriesSpec = do
           jobApplication' = parseJobApplication datascript
       jobApplication' `shouldBe` Just jobApplication
 
+  describe "parseJobEscrow" $ do
+    prop "fromJust . parseJobEscrow . Ledger.lifted == id :: EscrowSetup -> EscrowSetup" $ \escrowSetup -> do
+      parseJobEscrow (Ledger.DataScript (Ledger.lifted escrowSetup)) `shouldBe` Just escrowSetup
+
   describe "toJobOffer - (toJobOfferForm, PubKey) isomorphism" $ do
     prop "->" $ \(jof, k) -> (toJobOfferForm $ toJobOffer jof k) `shouldBe` jof
     prop "<-" $ \jo -> (toJobOffer (toJobOfferForm jo) (joOfferer jo)) `shouldBe` jo

@@ -29,6 +29,10 @@ instance Arbitrary JobOfferForm where
                 <*> (getPositive <$> arbitrary)
   shrink = genericShrink
 
+instance Arbitrary EscrowSetup where
+  arbitrary = genericArbitrary
+  shrink = genericShrink
+
 instance Arbitrary B8.ByteString where
   arbitrary = B8.pack <$> genericArbitrary
 

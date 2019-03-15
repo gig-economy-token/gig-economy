@@ -48,9 +48,9 @@ PlutusTx.makeLift ''JobApplication
 
 -- Datatype for setting up the escrow
 data EscrowSetup = EscrowSetup
-  { esEmployee :: PubKey
-  , esEmployer :: PubKey
-  , esArbiter  :: PubKey
+  { esJobOffer        :: JobOffer
+  , esJobApplication  :: JobApplication
+  , esArbiter         :: PubKey
   }
   deriving (Show, Eq, Generic)
 PlutusTx.makeLift ''EscrowSetup

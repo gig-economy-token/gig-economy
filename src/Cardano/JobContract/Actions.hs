@@ -11,6 +11,7 @@ module Cardano.JobContract.Actions
   , subscribeToJobApplicationBoard
   , parseJobOffer
   , parseJobApplication
+  , parseJobEscrow
   , extractJobOffers
   , extractJobApplications
   , subscribeToEscrow
@@ -23,13 +24,13 @@ module Cardano.JobContract.Actions
 
 import Prelude hiding ((++))
 import Control.Lens
-import           Ledger hiding (inputs, out)
+import           Ledger hiding (inputs, out, getPubKey)
 import           Ledger.Ada.TH as Ada
 import           Ledger.Value as Value
 import Data.Foldable (foldl')
-import           Wallet hiding (addresses)
-import Language.PlutusTx.Evaluation (evaluateCekTrace)
-import Language.PlutusCore.Evaluation.Result (EvaluationResult(..))
+import           Wallet hiding (addresses, getPubKey)
+import Language.PlutusTx.Evaluation (evaluateCek)
+import Language.PlutusCore.Evaluation.Result (EvaluationResult(..), EvaluationResultDef)
 import Language.PlutusCore (Term(..), Constant(..))
 import Cardano.ScriptMagic
 import qualified Data.Map as Map
@@ -92,41 +93,39 @@ subscribeToJobBoard = startWatching jobBoardAddress
 subscribeToJobApplicationBoard :: WalletAPI m => JobOffer -> m ()
 subscribeToJobApplicationBoard offer = startWatching (jobAddress offer)
 
+subscribeToEscrow :: WalletAPI m => JobOffer -> JobApplication -> m ()
+subscribeToEscrow jo ja = startWatching (jobEscrowAddress jo ja)
+
+applyEvalScript :: Script -> Script -> EvaluationResultDef
+applyEvalScript s1 s2 = evaluateCek (scriptToUnderlyingScript (s1 `applyScript` s2))
+
+getBS :: EvaluationResultDef -> Maybe ByteString
+getBS (EvaluationSuccess (Constant _ (BuiltinBS _ _ x))) = Just x
+getBS _ = Nothing
+
+getInt :: EvaluationResultDef -> Maybe Int
+getInt (EvaluationSuccess (Constant _ (BuiltinInt _ _ x))) = Just (fromIntegral x)
+getInt _ = Nothing
+
+getPubKey :: EvaluationResultDef -> Maybe PubKey
+getPubKey (EvaluationSuccess (Constant _ (BuiltinInt _ _ x))) = Just (PubKey $ fromIntegral x)
+getPubKey _ = Nothing
+
 parseJobOffer :: DataScript -> Maybe JobOffer
-parseJobOffer ds = JobOffer <$> desc <*> payout <*> pk
-  where
-    desc = getBS $ evaluateCekTrace (scriptToUnderlyingScript (readDesc `applyScript` ds'))
-    payout = getInt $ evaluateCekTrace (scriptToUnderlyingScript (readPayout `applyScript` ds'))
-    pk = PubKey <$> (getInt $ evaluateCekTrace (scriptToUnderlyingScript (readPk `applyScript` ds')))
-
-    getBS :: (a, EvaluationResult (Term b c d)) -> Maybe ByteString
-    getBS (_, EvaluationSuccess (Constant _ (BuiltinBS _ _ x))) = Just x
-    getBS _ = Nothing
-
-    getInt :: (a, EvaluationResult (Term b c d)) -> Maybe Int
-    getInt (_, EvaluationSuccess (Constant _ (BuiltinInt _ _ x))) = Just (fromIntegral x)
-    getInt _ = Nothing
-
-    ds' :: Script
-    ds' = getDataScript ds
-
-    readDesc = $$(Ledger.compileScript [|| \(JobOffer {joDescription}) -> joDescription ||]) 
-    readPayout = $$(Ledger.compileScript [|| \(JobOffer {joPayout}) -> joPayout ||]) 
-    readPk = $$(Ledger.compileScript [|| \(JobOffer {joOfferer = PubKey k}) -> k ||]) 
+parseJobOffer (DataScript ds) = JobOffer
+    <$> (getBS $ $$(Ledger.compileScript [|| \(JobOffer {joDescription}) -> joDescription ||]) `applyEvalScript` ds)
+    <*> (getInt $ $$(Ledger.compileScript [|| \(JobOffer {joPayout}) -> joPayout ||]) `applyEvalScript` ds)
+    <*> (getPubKey $ $$(Ledger.compileScript [|| \(JobOffer {joOfferer = PubKey k}) -> k ||]) `applyEvalScript` ds)
 
 parseJobApplication :: DataScript -> Maybe JobApplication
-parseJobApplication ds = JobApplication <$> acceptor
-  where
-    acceptor = PubKey <$> (getInt $ evaluateCekTrace (scriptToUnderlyingScript (readAcceptor `applyScript` ds')))
+parseJobApplication (DataScript ds) = JobApplication
+    <$> (getPubKey $ $$(Ledger.compileScript [|| \(JobApplication {jaAcceptor=PubKey k}) -> k ||]) `applyEvalScript` ds)
 
-    getInt :: (a, EvaluationResult (Term b c d)) -> Maybe Int
-    getInt (_, EvaluationSuccess (Constant _ (BuiltinInt _ _ x))) = Just (fromIntegral x)
-    getInt _ = Nothing
-
-    ds' :: Script
-    ds' = getDataScript ds
-
-    readAcceptor = $$(Ledger.compileScript [|| \(JobApplication {jaAcceptor=PubKey k}) -> k ||]) 
+parseJobEscrow :: DataScript -> Maybe EscrowSetup
+parseJobEscrow (DataScript ds') = EscrowSetup
+    <$> parseJobOffer (DataScript ($$(Ledger.compileScript [|| \(EscrowSetup {esJobOffer=o}) -> o ||]) `applyScript` ds'))
+    <*> parseJobApplication (DataScript ($$(Ledger.compileScript [|| \(EscrowSetup {esJobApplication=a}) -> a ||]) `applyScript` ds'))
+    <*> (getPubKey $ $$(Ledger.compileScript [|| \(EscrowSetup {esArbiter=PubKey k}) -> k ||]) `applyEvalScript` ds')
 
 
 extractJobOffers :: AddressMap -> Maybe [JobOffer]
@@ -140,10 +139,13 @@ extractJobApplications (AddressMap am) jobOffer = do
                               addresses <- Map.lookup (jobAddress jobOffer) am
                               pure $ catMaybes $ (parseTx parseJobApplication) <$> Map.elems addresses
 
-extractJobEscrows :: AddressMap -> JobOffer -> Maybe [JobApplication]
-extractJobEscrows (AddressMap am) jobOffer = do
-                              addresses <- Map.lookup (jobAddress jobOffer) am
-                              pure $ catMaybes $ (parseTx parseJobApplication) <$> Map.elems addresses
+
+extractAllJobEscrows :: AddressMap -> [EscrowSetup]
+extractAllJobEscrows (AddressMap am) = escrows
+  where
+    escrows = catMaybes $ (parseTx parseJobEscrow) <$> addresses
+    addresses :: [TxOut]
+    addresses = concat $ Map.elems <$> (Map.elems am)
 
 
 parseTx :: (DataScript -> Maybe a) -> TxOut -> Maybe a
@@ -155,20 +157,15 @@ parseTx f tx = do
     extractDataScript (PayToScript s) = Just s
     extractDataScript _               = Nothing
 
-
-subscribeToEscrow :: WalletAPI m => JobOffer -> JobApplication -> m ()
-subscribeToEscrow jo ja = startWatching (jobEscrowAddress jo ja)
-
 createEscrow :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> JobApplication -> PubKey -> Value ->  m ()
-createEscrow offer application arbiterPubKey cost = do
-    pk <- pubKey <$> myKeyPair
-    let setup = EscrowSetup
-                { esEmployer = pk
-                , esEmployee = jaAcceptor application
+createEscrow offer application arbiterPubKey cost = payToScript_ defaultSlotRange (jobEscrowAddress offer application) cost ds
+  where
+    setup = EscrowSetup
+                { esJobOffer = offer
+                , esJobApplication = application
                 , esArbiter = arbiterPubKey
                 }
-    let ds = DataScript (Ledger.lifted setup)
-    payToScript_ defaultSlotRange (jobEscrowAddress offer application) cost ds
+    ds = DataScript (Ledger.lifted setup)
 
 escrowAcceptEmployer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> JobApplication -> m ()
 escrowAcceptEmployer offer application = do
