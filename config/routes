@@ -30,8 +30,6 @@
 /job/employee/rejectEscrow            EmployeeRejectEscrowR POST
 
 /job/arbiter                          ArbiterR GET
-/job/arbiter/subscribeToMainJobBoard  ArbiterSubscribeToMainJobBoardR POST
-/job/arbiter/MonitorApplicants        ArbiterMonitorApplicantsR POST
 /job/arbiter/monitorEscrow            ArbiterMonitorEscrowR POST
 /job/arbiter/acceptEscrow             ArbiterAcceptEscrowR POST
 /job/arbiter/rejectEscrow             ArbiterRejectEscrowR POST

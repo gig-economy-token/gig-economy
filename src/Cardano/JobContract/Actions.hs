@@ -14,6 +14,7 @@ module Cardano.JobContract.Actions
   , parseJobEscrow
   , extractJobOffers
   , extractJobApplications
+  , extractJobEscrows
   , subscribeToEscrow
   , createEscrow
   , escrowAcceptEmployer
@@ -141,12 +142,10 @@ extractJobApplications (AddressMap am) jobOffer = do
                               pure $ catMaybes $ (parseTx parseJobApplication) <$> Map.elems addresses
 
 
-extractAllJobEscrows :: AddressMap -> [EscrowSetup]
-extractAllJobEscrows (AddressMap am) = escrows
-  where
-    escrows = catMaybes $ (parseTx parseJobEscrow) <$> addresses
-    addresses :: [TxOut]
-    addresses = concat $ Map.elems <$> (Map.elems am)
+extractJobEscrows :: AddressMap -> Maybe [EscrowSetup]
+extractJobEscrows (AddressMap am) = do
+                              addresses <- Map.lookup jobEscrowAddress am
+                              pure $ catMaybes $ (parseTx parseJobEscrow) <$> Map.elems addresses
 
 
 parseTx :: (DataScript -> Maybe a) -> TxOut -> Maybe a
@@ -182,12 +181,14 @@ escrowRejectEmployee offer application = do
         rs = RedeemerScript (Ledger.lifted action)
     collectMatchingFromScriptToPubKey defaultSlotRange jobEscrowContract rs (matchesEscrow offer application) (joOfferer offer)
 
+
 escrowAcceptArbiter :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> JobApplication -> m ()
 escrowAcceptArbiter offer application = do
     kp <- myKeyPair
     let action = EscrowAcceptedByArbiter (signature kp)
         rs = RedeemerScript (Ledger.lifted action)
     collectMatchingFromScriptToPubKey defaultSlotRange jobEscrowContract rs (matchesEscrow offer application) (jaAcceptor application)
+
 
 escrowRejectArbiter :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> JobApplication -> m ()
 escrowRejectArbiter offer application = do
@@ -196,11 +197,13 @@ escrowRejectArbiter offer application = do
         rs = RedeemerScript (Ledger.lifted action)
     collectMatchingFromScriptToPubKey defaultSlotRange jobEscrowContract rs (matchesEscrow offer application) (joOfferer offer)
 
+
 matchesEscrow :: JobOffer -> JobApplication -> (TxOutRef, TxOut) -> Bool
 matchesEscrow offer application (_, tx) = isJust $ do
                                       es <- parseTx parseJobEscrow tx
                                       guard (esJobOffer es == offer)
                                       guard (esJobApplication es == application)
+
 
 knownMatchingEscrowOutputs :: (WalletAPI m, WalletDiagnostics m) => EscrowSetup -> m [(TxOutRef, TxOut)]
 knownMatchingEscrowOutputs setup = do
@@ -238,6 +241,7 @@ collectFromScriptToPubKey range scr red destination = do
     _ <- createTxAndSubmit range (Set.fromList ins) [oo]
     pure ()
 
+
 collectOutputsFromScriptToPubKey :: (Monad m, WalletAPI m) => SlotRange -> ValidatorScript -> RedeemerScript -> [(TxOutRef, TxOut)] -> PubKey -> m ()
 collectOutputsFromScriptToPubKey range scr red outputs' destination = do
     let
@@ -252,6 +256,7 @@ collectOutputsFromScriptToPubKey range scr red outputs' destination = do
         oo = pubKeyTxOut value' destination
     _ <- createTxAndSubmit range (Set.fromList ins) [oo]
     pure ()
+
 
 collectMatchingFromScriptToPubKey ::
   (Monad m, WalletAPI m) =>

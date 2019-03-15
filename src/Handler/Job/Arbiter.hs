@@ -19,25 +19,9 @@ getArbiterR :: Handler Html
 getArbiterR = do
       renderLayout
 
-postArbiterSubscribeToMainJobBoardR :: Handler Html
-postArbiterSubscribeToMainJobBoardR = do
-      doOnBlockchain subscribeToJobBoard
-      renderLayout
-
-postArbiterMonitorApplicantsR :: Handler Html
-postArbiterMonitorApplicantsR = do
-      ((result, _), _) <- runFormPost (hiddenJobOfferForm Nothing)
-      case result of
-        FormSuccess offer -> doOnBlockchain (subscribeToJobApplicationBoard offer)
-        _ -> pure ()
-      renderLayout
-
 postArbiterMonitorEscrowR :: Handler Html
 postArbiterMonitorEscrowR = do
-      ((result, _), _) <- runFormPost (hiddenJobEscrowForm Nothing)
-      case result of
-        FormSuccess (_offer, _application) -> doOnBlockchain subscribeToEscrow
-        _ -> pure ()
+      doOnBlockchain subscribeToEscrow
       renderLayout
 
 postArbiterAcceptEscrowR :: Handler Html

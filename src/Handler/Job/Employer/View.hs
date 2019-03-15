@@ -34,20 +34,28 @@ mkAcceptanceListing =
   do
     am <- readWatchedAddresses employerWallet
     let offers = fromMaybe [] $ extractJobOffers am
-    mapM (mkJobEntry am) offers
+        escrows = extractJobEscrows am
+    mapM (mkJobEntry escrows am) offers
   where
-    mkJobEntry :: AddressMap -> JobOffer -> Handler JobEntry
-    mkJobEntry am offer = do
+    mkJobEntry :: Maybe [EscrowSetup] -> AddressMap -> JobOffer -> Handler JobEntry
+    mkJobEntry escrows am offer = do
           (widget, enctype) <- generateFormPost (hiddenJobOfferForm (Just offer))
           let applications = fromMaybe [] $ extractJobApplications am offer
-          applicationsWithForms <- mapM (mkEscrowWithForm offer) applications
+          applicationsWithForms <- mapM (mkEscrowWithForm escrows offer) applications
           pure JobEntry
                 { jeOffer = offer
                 , jeForm = (widget, enctype)
                 , jeApplications = applicationsWithForms
                 }
-    mkEscrowWithForm :: JobOffer -> JobApplication -> Handler (JobApplication, Escrow)
-    mkEscrowWithForm o a = do
+
+    mkEscrowWithForm :: Maybe [EscrowSetup] -> JobOffer -> JobApplication -> Handler (JobApplication, Escrow)
+    mkEscrowWithForm esx o a = do
               we <- generateFormPost (hiddenJobEscrowForm (Just (o, a)))
-              --FIXME: figure out how to read currently-active escrows
-              pure $ (a, NoEscrow we)
+              case esx of
+                Nothing -> pure $ (a, NoEscrow we)
+                Just s -> let
+                            applicableEscrows = filter (\es -> esJobOffer es == o && esJobApplication es == a) s
+                          in
+                          case applicableEscrows of
+                            [] -> pure $ (a, NoEscrow we)
+                            _ -> pure $ (a, EscrowStarted we)
