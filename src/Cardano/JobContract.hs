@@ -1,9 +1,7 @@
 module Cardano.JobContract
-  ( module Cardano.JobContract.Types
-  , module Cardano.JobContract.Contracts
-  , module Cardano.JobContract.Actions
-  ) where
+    ( module JobContract
+    ) where
 
-import Cardano.JobContract.Types
-import Cardano.JobContract.Contracts
-import Cardano.JobContract.Actions
+import Cardano.JobContract.Types as JobContract
+import Cardano.JobContract.Contracts as JobContract
+import Cardano.JobContract.Actions as JobContract

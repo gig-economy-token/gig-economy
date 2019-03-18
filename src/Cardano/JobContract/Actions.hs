@@ -24,7 +24,7 @@ module Cardano.JobContract.Actions
   ) where
 
 import Prelude hiding ((++))
-import Control.Monad (guard)
+import Control.Monad (guard, void)
 import Control.Lens
 import           Ledger hiding (inputs, out, getPubKey)
 import           Ledger.Ada.TH as Ada
@@ -47,7 +47,7 @@ postOffer :: (WalletAPI m, WalletDiagnostics m) => JobOfferForm -> m ()
 postOffer jof = do
     pk <- pubKey <$> myKeyPair
     let offer = toJobOffer jof pk
-    let ds = DataScript (Ledger.lifted offer)
+        ds = DataScript (Ledger.lifted offer)
     subscribeToJobApplicationBoard offer
     _ <- payToScript defaultSlotRange jobBoardAddress ($$(adaValueOf) 0) ds
     pure ()
@@ -76,8 +76,7 @@ closeOffer jof = do
                                   , txInType=ConsumeScriptAddress jobBoard unitRedeemer
                                   }
     out <- ownPubKeyTxOut ($$(adaValueOf) 0)
-    _ <- createTxAndSubmit defaultSlotRange inputs [out]
-    pure ()
+    void $ createTxAndSubmit defaultSlotRange inputs [out]
 
 applyToOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> m ()
 applyToOffer offer = do
@@ -238,8 +237,7 @@ collectFromScriptToPubKey range scr red destination = do
         value' = foldl' Value.plus Value.zero $ fmap (txOutValue . snd) outputs'
 
         oo = pubKeyTxOut value' destination
-    _ <- createTxAndSubmit range (Set.fromList ins) [oo]
-    pure ()
+    void $ createTxAndSubmit range (Set.fromList ins) [oo]
 
 
 collectOutputsFromScriptToPubKey :: (Monad m, WalletAPI m) => SlotRange -> ValidatorScript -> RedeemerScript -> [(TxOutRef, TxOut)] -> PubKey -> m ()
@@ -254,8 +252,7 @@ collectOutputsFromScriptToPubKey range scr red outputs' destination = do
         value' = foldl' Value.plus Value.zero $ fmap (txOutValue . snd) outputs'
 
         oo = pubKeyTxOut value' destination
-    _ <- createTxAndSubmit range (Set.fromList ins) [oo]
-    pure ()
+    void $ createTxAndSubmit range (Set.fromList ins) [oo]
 
 
 collectMatchingFromScriptToPubKey ::
@@ -283,5 +280,4 @@ collectMatchingFromScriptToPubKey range scr red p destination = do
         value' = foldl' Value.plus Value.zero $ fmap (txOutValue . snd) outputs'
 
         oo = pubKeyTxOut value' destination
-    _ <- createTxAndSubmit range (Set.fromList ins) [oo]
-    pure ()
+    void $ createTxAndSubmit range (Set.fromList ins) [oo]
