@@ -16,8 +16,7 @@ doOnBlockchain :: HasSimulatedChain m => MockWallet () -> m ()
 doOnBlockchain op = runOnBlockchain arbiterWallet op
 
 getArbiterR :: Handler Html
-getArbiterR = do
-      renderLayout
+getArbiterR = renderLayout
 
 postArbiterMonitorEscrowR :: Handler Html
 postArbiterMonitorEscrowR = do
@@ -28,14 +27,18 @@ postArbiterAcceptEscrowR :: Handler Html
 postArbiterAcceptEscrowR = do
       ((result, _), _) <- runFormPost (hiddenJobEscrowForm Nothing)
       case result of
-        FormSuccess (offer, application) -> doOnBlockchain (escrowAcceptArbiter offer application)
-        _ -> pure ()
-      renderLayout
+        FormMissing -> renderLayoutWithError "No form found on the request"
+        FormFailure t -> renderLayoutWithError (intercalate "\n" t)
+        FormSuccess (offer, application) -> do
+                                            doOnBlockchain (escrowAcceptArbiter offer application)
+                                            renderLayout
 
 postArbiterRejectEscrowR :: Handler Html
 postArbiterRejectEscrowR = do
       ((result, _), _) <- runFormPost (hiddenJobEscrowForm Nothing)
       case result of
-        FormSuccess (offer, application) -> doOnBlockchain (escrowRejectArbiter offer application)
-        _ -> pure ()
-      renderLayout
+        FormMissing -> renderLayoutWithError "No form found on the request"
+        FormFailure t -> renderLayoutWithError (intercalate "\n" t)
+        FormSuccess (offer, application) -> do
+                                            doOnBlockchain (escrowRejectArbiter offer application)
+                                            renderLayout

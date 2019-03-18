@@ -5,6 +5,11 @@
         <div .page-header>
           <h1>Employer
           <p>Funds: ADA#{funds}
+          $case errMsg
+            $of Nothing
+            $of Just msg
+              <p .bg-danger>#{msg}
+
           $case acceptanceListing
             $of []
               No jobs posted yet.

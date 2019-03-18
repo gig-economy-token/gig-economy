@@ -3,6 +3,7 @@
 {-# LANGUAGE QuasiQuotes        #-}
 module Handler.Job.Employer.View
   ( renderLayout
+  , renderLayoutWithError
   ) where
 
 import Import
@@ -12,8 +13,17 @@ import Cardano.Html.Emulator
 import Handler.Job.Forms
 import Wallet.Emulator.AddressMap
 
-renderLayout :: (Widget, Enctype) -> Handler Html
-renderLayout (postOfferForm, postOfferEnctype) = do
+renderLayout :: Handler Html
+renderLayout = renderLayout' Nothing Nothing
+
+renderLayoutWithError :: (Widget, Enctype) -> Text -> Handler Html
+renderLayoutWithError widgetEnctype err = renderLayout' (Just widgetEnctype) (Just err)
+
+renderLayout' :: Maybe (Widget, Enctype) -> Maybe Text -> Handler Html
+renderLayout' formData errMsg = do
+    (postOfferForm, postOfferEnctype) <- case formData of
+                                              Nothing -> generateFormPost jobOfferForm
+                                              Just f -> pure f
     acceptanceListing <- mkAcceptanceListing
     funds <- fundsInWallet employerWallet
     defaultLayout $ do

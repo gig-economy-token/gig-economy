@@ -1,7 +1,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
-module Handler.Job.Arbiter.View where
+module Handler.Job.Arbiter.View
+  ( renderLayout
+  , renderLayoutWithError
+  ) where
 
 import Import
 import Wallet.Emulator
@@ -15,8 +18,15 @@ data Escrows
   = NotSubscribedToEscrows
   | Escrows [EscrowUI]
 
+
+renderLayoutWithError :: Text -> Handler Html
+renderLayoutWithError e = renderLayout' (Just e)
+
 renderLayout :: Handler Html
-renderLayout = do
+renderLayout = renderLayout' Nothing
+
+renderLayout' :: Maybe Text -> Handler Html
+renderLayout' errMsg = do
     escrows <- mkEscrows arbiterWallet
     funds <- fundsInWallet arbiterWallet
     defaultLayout $ do

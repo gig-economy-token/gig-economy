@@ -16,8 +16,7 @@ doOnBlockchain :: HasSimulatedChain m => MockWallet () -> m ()
 doOnBlockchain op = runOnBlockchain employeeWallet op
 
 getEmployeeR :: Handler Html
-getEmployeeR = do
-      renderLayout
+getEmployeeR = renderLayout
 
 postEmployeeAcceptOfferR :: Handler Html
 postEmployeeAcceptOfferR = do
@@ -26,8 +25,8 @@ postEmployeeAcceptOfferR = do
         FormSuccess jobOffer -> do
           doOnBlockchain (applyToOffer jobOffer)
           renderLayout
-        FormMissing -> renderLayout
-        FormFailure _ -> renderLayout
+        FormMissing -> renderLayoutWithError "No form found on the request"
+        FormFailure t -> renderLayoutWithError (intercalate "\n" t)
 
 postEmployeeSubscribeR :: Handler Html
 postEmployeeSubscribeR = do
@@ -38,6 +37,8 @@ postEmployeeRejectEscrowR :: Handler Html
 postEmployeeRejectEscrowR = do
       ((result, _), _) <- runFormPost (hiddenJobEscrowForm Nothing)
       case result of
-        FormSuccess (job, application) -> doOnBlockchain (escrowRejectEmployee job application)
-        _ -> pure ()
-      renderLayout
+        FormMissing -> renderLayoutWithError "No form found on the request"
+        FormFailure t -> renderLayoutWithError (intercalate "\n" t)
+        FormSuccess (job, application) -> do
+                                          doOnBlockchain (escrowRejectEmployee job application)
+                                          renderLayout

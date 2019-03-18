@@ -5,6 +5,11 @@
         <div .page-header>
           <h1>Arbiter
           <p>Funds: ADA#{funds}
+          $case errMsg
+            $of Nothing
+            $of Just msg
+              <p .bg-danger>#{msg}
+
           <h2>Escrows being monitored
           $case escrows
             $of NotSubscribedToEscrows

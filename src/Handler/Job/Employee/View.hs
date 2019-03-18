@@ -1,8 +1,10 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-module Handler.Job.Employee.View where
+module Handler.Job.Employee.View
+  ( renderLayout
+  , renderLayoutWithError
+  ) where
 
 import Import
 import Wallet.Emulator
@@ -12,7 +14,13 @@ import Cardano.Html.Emulator
 import Handler.Job.Forms
 
 renderLayout :: Handler Html
-renderLayout = do
+renderLayout = renderLayout' Nothing
+
+renderLayoutWithError :: Text -> Handler Html
+renderLayoutWithError e = renderLayout' (Just e)
+
+renderLayout' :: Maybe Text -> Handler Html
+renderLayout' errMsg = do
     offers <- mkJobBoard employeeWallet
     funds <- fundsInWallet employeeWallet
     defaultLayout $ do
