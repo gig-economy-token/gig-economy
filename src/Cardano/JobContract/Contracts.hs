@@ -26,7 +26,7 @@ import Cardano.JobContract.Types
 -- () -> JobOffer {} -> PendingTx -> ()
 jobBoard :: ValidatorScript
 jobBoard = ValidatorScript ($$(Ledger.compileScript [||
-  \() (JobOffer {joOfferer}) (t :: Validation.PendingTx) ->
+  \(JobOffer {joOfferer}) () (t :: Validation.PendingTx) ->
     let
         adaValueIn :: Value -> Int
         adaValueIn v = $$(Ada.toInt) ($$(Ada.fromValue) v)
@@ -77,14 +77,14 @@ jobBoard = ValidatorScript ($$(Ledger.compileScript [||
 -- XXX: Shall we do the escrow here?? Maybe providing oracles.
 jobAcceptanceBoard :: ValidatorScript
 jobAcceptanceBoard = ValidatorScript ($$(Ledger.compileScript [||
-  \(_ :: JobOffer) () (_ :: JobApplication) (_ :: Validation.PendingTx) ->
+  \(_ :: JobOffer) (_ :: JobApplication) () (_ :: Validation.PendingTx) ->
     ()  -- FIXME: We don't validate anything!
   ||]))
 
 jobEscrowContract :: ValidatorScript
 jobEscrowContract = ValidatorScript ($$(Ledger.compileScript [||
-  \ (result :: EscrowResult)
-    (setup :: EscrowSetup)
+  \ (setup :: EscrowSetup)
+    (result :: EscrowResult)
     (tx :: Validation.PendingTx)
     ->
     let EscrowSetup {
