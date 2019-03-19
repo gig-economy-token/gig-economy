@@ -41,7 +41,10 @@ packages:
 extra-deps:
   # Last commit to master as 2019-01-29
 - git: git@github.com:input-output-hk/plutus.git
-  commit: 12a9d088f68fef1b87bbf3a13482dcd45281f869
+  #W commit: b8f7f9c22b86d1c04f64e5b163d4317b423e1923
+  #W commit: aaf0df521ce61e5e679dedcd209bf3ad724a40f8
+  #w commit: d2a17519b76bcd252fe332c3f9b95d0b08025909
+  commit: 0541d0be0f5187ca311f92334a46adaf123402b7
   subdirs:
     - language-plutus-core
     - plutus-tx

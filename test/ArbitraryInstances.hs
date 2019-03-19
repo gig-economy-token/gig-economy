@@ -36,7 +36,7 @@ instance Arbitrary B8.ByteString where
   arbitrary = B8.pack <$> genericArbitrary
 
 instance Arbitrary Ledger.Types.PubKey where
-  arbitrary = Ledger.Types.PubKey <$> arbitrary
+  arbitrary = (Ledger.Types.PubKey . getNonNegative) <$> arbitrary
 
 instance Arbitrary Wallet.API.KeyPair where
   arbitrary = (Wallet.API.keyPair . getNonNegative) <$> arbitrary
