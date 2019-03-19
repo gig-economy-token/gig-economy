@@ -9,6 +9,8 @@ module Cardano.Html.Emulator
   , readEmulatorState
   , readWatchedAddresses
   , readWatchedAddresses'
+  , runOnBlockchain
+  , fundsInWallet
   ) where
 
 import Import
@@ -16,8 +18,10 @@ import Yesod.Core.Types
 import Wallet.Emulator
 import Wallet.Emulator.AddressMap
 import qualified Data.Map as Map
+import Control.Monad (void)
 
 import Cardano.Emulator
+import Cardano.Helpers
 
 class Monad m => HasSimulatedChain m where
   readSimulatedChain    :: m SimulatedChain
@@ -65,10 +69,17 @@ appendStepAndNotifyKnownWallets :: HasSimulatedChain m => Trace MockWallet a -> 
 appendStepAndNotifyKnownWallets newStep = appendStep stepAndNotify
   where
     stepAndNotify = do
-                    _ <- newStep
-                    _ <- processPending >>= walletsNotifyBlock allKnownWallets
-                    pure ()
+                    void $ newStep
+                    void $ processPending >>= walletsNotifyBlock allKnownWallets
 
 -- Only for HasSimulatedChain Handler
 readSimulatedChainRef :: MonadReader (HandlerData c App) m => m (IORef SimulatedChain)
 readSimulatedChainRef = (simulatedChain . rheSite . handlerEnv) <$> ask
+
+runOnBlockchain :: HasSimulatedChain m => Wallet -> MockWallet () -> m ()
+runOnBlockchain w = appendStepAndNotifyKnownWallets . walletAction w
+
+fundsInWallet :: HasSimulatedChain m => Wallet -> m (Int)
+fundsInWallet w = do
+                    es <- readEmulatorState
+                    pure $ fromMaybe 0 $ getResultingFunds <$> Map.lookup w (_walletStates es)

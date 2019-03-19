@@ -123,16 +123,6 @@ instance Yesod App where
                     , menuItemAccessCallback = True
                     }
                 , NavbarRight $ MenuItem
-                    { menuItemLabel = "Player 1"
-                    , menuItemRoute = Player1R
-                    , menuItemAccessCallback = True
-                    }
-                , NavbarRight $ MenuItem
-                    { menuItemLabel = "Player 2"
-                    , menuItemRoute = Player2R
-                    , menuItemAccessCallback = True
-                    }
-                , NavbarRight $ MenuItem
                     { menuItemLabel = "Employer"
                     , menuItemRoute = EmployerR
                     , menuItemAccessCallback = True
@@ -140,6 +130,11 @@ instance Yesod App where
                 , NavbarRight $ MenuItem
                     { menuItemLabel = "Employee"
                     , menuItemRoute = EmployeeR
+                    , menuItemAccessCallback = True
+                    }
+                , NavbarRight $ MenuItem
+                    { menuItemLabel = "Arbiter"
+                    , menuItemRoute = ArbiterR
                     , menuItemAccessCallback = True
                     }
                 ]

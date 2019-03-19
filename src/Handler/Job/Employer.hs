@@ -1,38 +1,22 @@
 {-# LANGUAGE NoImplicitPrelude  #-}
-module Handler.Job.Employer
-  ( getEmployerR
-  , postEmployerPostOfferR
-  , postEmployerCloseOfferR
-  ) where
+module Handler.Job.Employer where
 
 import Import
 
 import Handler.Job.Employer.View
-import Yesod.Form.Bootstrap3
+import Handler.Job.Forms
 import Cardano.JobContract
 import Cardano.Emulator.Job
 import Cardano.Html.Emulator
 import Wallet.Emulator
-import qualified Data.ByteString.Lazy.Char8 as B8
+import Ledger.Ada
+import qualified Wallet.API
 
 doOnBlockchain :: HasSimulatedChain m => MockWallet () -> m ()
-doOnBlockchain op = appendStepAndNotifyKnownWallets (walletAction employerWallet op)
-
-jobOfferForm :: Html -> MForm Handler (FormResult JobOfferForm, Widget)
-jobOfferForm = renderDivs $ JobOfferForm
-              <$> areq descField (bfs ("Job description" :: Text)) Nothing
-              <*> areq payoutField (bfs ("Job payout" :: Text)) Nothing
-  where
-    descField = convertField (B8.pack . unpack) (pack . B8.unpack) $
-                checkBool (/= "") ("Please enter a description" :: Text) $
-                textField
-    payoutField = checkBool (> 0) ("Please enter a positive payout" :: Text) $
-                  intField
+doOnBlockchain op = runOnBlockchain employerWallet op
 
 getEmployerR :: Handler Html
-getEmployerR = do
-  jobform <- generateFormPost jobOfferForm
-  renderLayout jobform
+getEmployerR = renderLayout
 
 postEmployerPostOfferR :: Handler Html
 postEmployerPostOfferR = do
@@ -40,9 +24,9 @@ postEmployerPostOfferR = do
   case result of
     FormSuccess job -> do
         doOnBlockchain (postOffer job)
-        renderLayout (widget, enctype)
-    FormMissing -> renderLayout (widget, enctype)
-    FormFailure _ -> renderLayout (widget, enctype)
+        renderLayout
+    FormMissing -> renderLayoutWithError (widget, enctype) "No form found in request"
+    FormFailure t -> renderLayoutWithError (widget, enctype) (intercalate "\n" t)
 
 postEmployerCloseOfferR :: Handler Html
 postEmployerCloseOfferR = do
@@ -50,6 +34,26 @@ postEmployerCloseOfferR = do
   case result of
     FormSuccess job -> do
         doOnBlockchain (closeOffer job)
-        renderLayout (widget, enctype)
-    FormMissing -> renderLayout (widget, enctype)
-    FormFailure _ -> renderLayout (widget, enctype)
+        renderLayout
+    FormMissing -> renderLayoutWithError (widget, enctype) "No form found in request"
+    FormFailure t -> renderLayoutWithError (widget, enctype) (intercalate "\n" t)
+
+postEmployerStartEscrowR :: Handler Html
+postEmployerStartEscrowR = do
+  ((result, widget), enctype) <- runFormPost (hiddenJobEscrowForm Nothing)
+  case result of
+    FormSuccess (job, application) -> do
+      doOnBlockchain (createEscrow job application (Wallet.API.PubKey (getWallet arbiterWallet)) (adaValueOf $ joPayout job))
+      renderLayout
+    FormMissing -> renderLayoutWithError (widget, enctype) "No form found in request"
+    FormFailure t -> renderLayoutWithError (widget, enctype) (intercalate "\n" t)
+
+postEmployerAcceptEscrowR :: Handler Html
+postEmployerAcceptEscrowR = do
+  ((result, widget), enctype) <- runFormPost (hiddenJobEscrowForm Nothing)
+  case result of
+    FormSuccess (job, application) -> do
+      doOnBlockchain (createEscrow job application (Wallet.API.PubKey (getWallet arbiterWallet)) (adaValueOf $ joPayout job))
+      renderLayout
+    FormMissing -> renderLayoutWithError (widget, enctype) "No form found in request"
+    FormFailure t -> renderLayoutWithError (widget, enctype) (intercalate "\n" t)

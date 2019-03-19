@@ -4,6 +4,12 @@
       <div .col-lg-12>
         <div .page-header>
           <h1>Employer
+          <p>Funds: ADA#{funds}
+          $case errMsg
+            $of Nothing
+            $of Just msg
+              <p .bg-danger>#{msg}
+
           $case acceptanceListing
             $of []
               No jobs posted yet.
@@ -11,13 +17,25 @@
               <ul>
                 $forall offer <- xs
                   <li>
-                    #{show $ jeOffer offer}
-                    <ul>
-                      $forall a <- jeAcceptances offer
-                        <li>#{show a}
                     <form method=POST action=@{EmployerCloseOfferR} enctype=#{snd $ jeForm offer}>
+                      #{show $ jeOffer offer}
                       ^{fst $ jeForm offer}
-                      <button .btn.btn-danger.form-control type="submit">Close job offer
+                      <button .btn.btn-danger type="submit">Close job offer
+                    <ul>
+                      $forall (a, escrow) <- jeApplications offer
+                        <li>
+                          <p>#{show a}
+                          $case escrow
+                            $of NoEscrow (w, e)
+                              No escrow started.
+                              <form method=POST action=@{EmployerStartEscrowR} enctype=#{e}>
+                                ^{w}
+                                <button .btn.btn-default type="submit">Start escrow
+                            $of EscrowStarted (w, e)
+                              Escrow started
+                              <form method=POST action=@{EmployerAcceptEscrowR} enctype=#{e}>
+                                ^{w}
+                                <button .btn.btn-success type="submit">Accept escrow and deliver funds to freelancer
 
           <h2>Actions
           <form method=POST action=@{EmployerPostOfferR} enctype=#{postOfferEnctype}>

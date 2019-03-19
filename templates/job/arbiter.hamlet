@@ -1,0 +1,31 @@
+<div .container>
+  <div .bs-docs-section>
+    <div .row>
+      <div .col-lg-12>
+        <div .page-header>
+          <h1>Arbiter
+          <p>Funds: ADA#{funds}
+          $case errMsg
+            $of Nothing
+            $of Just msg
+              <p .bg-danger>#{msg}
+
+          <h2>Escrows being monitored
+          $case escrows
+            $of NotSubscribedToEscrows
+              <p>You are not subscribed to the escrows address!
+              <form method=POST action=@{ArbiterMonitorEscrowR}>
+                <button .btn.btn-primary type="submit">Start monitoring escrows
+            $of Escrows []
+              <p>No escrows found
+            $of Escrows xs
+              $forall EscrowUI o a (w, e) <- xs
+                <ul>
+                  <li>Offer: #{show o}
+                  <li>Application: #{show a}
+                <form method=POST action=@{ArbiterAcceptEscrowR} enctype=#{e}>
+                  ^{w}
+                  <button .btn.btn-primary type="submit">Accept escrow and send money to freelancer
+                <form method=POST action=@{ArbiterRejectEscrowR} enctype=#{e}>
+                  ^{w}
+                  <button .btn.btn-primary type="submit">Reject escrow and send money back to employer
