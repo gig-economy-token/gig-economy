@@ -1,4 +1,4 @@
-[![CircleCI](https://circleci.com/gh/stackbuilders/gig-economy/tree/master.svg?style=svg&circle-token=cb460bf0b5248d567597f6a42f9eae1b41904079)](https://circleci.com/gh/stackbuilders/gig-economy/tree/master)
+[![CircleCI](https://circleci.com/gh/stackbuilders/gig-economy/tree/master.svg?style=shield&circle-token=cb460bf0b5248d567597f6a42f9eae1b41904079)](https://circleci.com/gh/stackbuilders/gig-economy/tree/master)
 # Gig Economy prototype
 Here is the prototype for Gig Economy
 
