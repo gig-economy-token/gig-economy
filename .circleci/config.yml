@@ -1,63 +1,37 @@
-version: 2
+---
+version: 2.1
 jobs:
   build:
     docker:
-      - image: fpco/stack-build:lts-12.26
+      - image: debian:9.8
     steps:
       - checkout
+      - run: apt update
+      - run: apt install -y curl libssl-dev libtinfo-dev
+      - run: curl -sSL https://get.haskellstack.org/ | sh
 
-      # Update stack
-      - run: stack upgrade
-
-      # Stack setup
       - restore_cache:
           keys:
-            - c-{{ .Environment.CACHE_VERSION }}-stack-ghc-{{ .Branch }}-{{ checksum "stack.yaml" }}
-            - c-{{ .Environment.CACHE_VERSION }}-stack-ghc-{{ .Branch }}
-            - c-{{ .Environment.CACHE_VERSION }}-stack-ghc
+            - v1-stack-{{ checksum "package.yaml" }}
+            - v1-stack-
+
       - run: stack setup
-      - save_cache:
-          key: c-{{ .Environment.CACHE_VERSION }}-stack-ghc-{{ .Branch }}-{{ checksum "stack.yaml" }}
-          paths:
-            - ~/.stack
-      
+      - run: mkdir ~/.ssh
+      - run: ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+      - run: stack build --only-dependencies --test -j1
+      - run: stack build --test --no-run-tests
 
-      # Build deps
-      - restore_cache:
-          keys:
-            - c-{{ .Environment.CACHE_VERSION }}-stack-deps-{{ .Branch }}-{{ checksum "package.yaml" }}
-            - c-{{ .Environment.CACHE_VERSION }}-stack-deps-{{ .Branch }}
-            - c-{{ .Environment.CACHE_VERSION }}-stack-deps
-      # We run in a single thread because otherwise it runs out of memory in CI
-      - run: stack -j 1 build --only-dependencies --test
       - save_cache:
-          key: c-{{ .Environment.CACHE_VERSION }}-stack-deps-{{ .Branch }}-{{ checksum "package.yaml" }}
+          key: v1-stack-{{ checksum "package.yaml" }}
           paths:
-            - ~/.stack
             - .stack-work
+            - /root/.stack
 
-      # Build bin
-      - restore_cache:
-          keys:
-            - c-{{ .Environment.CACHE_VERSION }}-stack-bin-{{ .Branch }}-{{ checksum "package.yaml" }}
-            - c-{{ .Environment.CACHE_VERSION }}-stack-bin-{{ .Branch }}
-            - c-{{ .Environment.CACHE_VERSION }}-stack-bin
-      - run: stack build
-      - save_cache:
-          key: c-{{ .Environment.CACHE_VERSION }}-stack-bin-{{ .Branch }}-{{ checksum "package.yaml" }}
-          paths:
-            - ~/.stack
-            - .stack-work
-
-      # Test
-      - restore_cache:
-          keys:
-            - c-{{ .Environment.CACHE_VERSION }}-stack-test-{{ .Branch }}-{{ checksum "package.yaml" }}
-            - c-{{ .Environment.CACHE_VERSION }}-stack-test-{{ .Branch }}
-            - c-{{ .Environment.CACHE_VERSION }}-stack-test
       - run: stack test
-      - save_cache:
-          key: c-{{ .Environment.CACHE_VERSION }}-stack-test-{{ .Branch }}-{{ checksum "package.yaml" }}
-          paths:
-            - ~/.stack
-            - .stack-work
+
+      - run: |
+          if [[ "$CIRCLE_BRANCH" == master ]]; then
+            ssh-keyscan -H demo.getgig.org >> ~/.ssh/known_hosts
+            stack install hapistrano
+            stack exec -- hap -c deploy/staging.yaml deploy
+          fi

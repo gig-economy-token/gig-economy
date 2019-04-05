@@ -1,0 +1,8 @@
+---
+certbot_install_from_source: true
+certbot_create_if_missing: true
+
+certbot_certs:
+  - email: gig@stackbuilders.com
+    domains:
+      - "{{ general_domain }}"
