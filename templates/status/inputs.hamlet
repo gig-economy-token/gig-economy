@@ -1,0 +1,25 @@
+<div .panel.panel-default>
+  <div .panel-heading>
+    Inputs (#{length ins})
+
+  $if null ins
+    <div .panel-body>
+      <em>No transactions
+
+  $else
+    <table .table>
+      <thead>
+        <tr>
+          <th>Ref
+          <th>Type
+
+      <tbody>
+        $forall TxInOf{..} <- ins
+          <tr>
+            <td>#{show $ getTxId $ txOutRefId txInRef}
+            <td>
+              $case txInType
+                $of (ConsumeScriptAddress _ _)
+                  ConsumeScriptAddress
+                $of (ConsumePublicKeyAddress _)
+                  ConsumePublicKeyAddress

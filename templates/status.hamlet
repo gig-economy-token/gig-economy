@@ -1,0 +1,4 @@
+<div>
+  ^{walletsW _walletStates}
+  ^{blocksW _chainNewestFirst}
+  ^{logsW _emulatorLog}

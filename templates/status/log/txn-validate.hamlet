@@ -1,0 +1,3 @@
+<li .list-group-item.list-group-item-success>
+  <strong>Validating transaction
+  #{txIdToString txId}

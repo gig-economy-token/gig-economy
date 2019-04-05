@@ -1,0 +1,11 @@
+<div>
+  <h1>Logs (#{length logs})
+  <div .row>
+    <div .col-md-12>
+      $if null logs
+        <em>No logs
+
+      $else
+        <ul .list-group>
+          $forall log <- logs
+            ^{logW log}
