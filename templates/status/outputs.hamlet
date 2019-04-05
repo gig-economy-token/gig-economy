@@ -1,0 +1,27 @@
+<div .panel.panel-default>
+  <div .panel-heading>
+    Outputs (#{length outs})
+
+  $if null outs
+    <div .panel-body>
+      <em>No transactions
+
+  $else
+    <table .table>
+      <thead>
+        <tr>
+          <th>Address
+          <th>Value
+          <th>Type
+
+      <tbody>
+        $forall TxOutOf{..} <- outs
+          <tr>
+            <td>#{show $ getAddress txOutAddress}
+            <td>#{values txOutValue}
+            <td>
+              $case txOutType
+                $of (PayToScript _)
+                  PayToScript
+                $of (PayToPubKey key)
+                  PayToPubKey ##{getPubKey key}

@@ -1,0 +1,4 @@
+<li .list-group-item.list-group-item-danger>
+  <strong>Invalid transaction
+  #{txIdToString txId}
+  #{show err}

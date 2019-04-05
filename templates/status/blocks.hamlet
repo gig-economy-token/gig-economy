@@ -1,0 +1,13 @@
+<div>
+  <h1>Blocks (#{length blocks})
+  <div .row>
+    <div .col-md-12>
+      <ul .list-group>
+        $forall block <- blocks
+          <li .list-group-item>
+            $if null block
+              <em>Empty block
+
+            $else
+              $forall tx <- block
+                ^{transactionsW tx}

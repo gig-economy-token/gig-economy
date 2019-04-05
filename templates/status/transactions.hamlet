@@ -1,0 +1,6 @@
+<div .row>
+  <div .col-md-12>
+    ^{inputsW $ S.toList txInputs}
+
+  <div .col-md-12>
+    ^{outputsW txOutputs}

@@ -2,7 +2,6 @@ module Cardano.Emulator where
 
 import Wallet.Emulator
 import Ledger
-import qualified Cardano.Emulator.GuessingGame
 import qualified Cardano.Emulator.Job
 
 data SimulatedChain = SimulatedChain
@@ -20,15 +19,10 @@ defaultSimulatedChain :: SimulatedChain
 defaultSimulatedChain = fromTx initialTx
 
 initialTx :: [Tx]
-initialTx = [ Cardano.Emulator.GuessingGame.miningTx
-            , Cardano.Emulator.Job.miningTx
-            ]
+initialTx = [Cardano.Emulator.Job.miningTx]
 
 allKnownWallets :: [Wallet]
-allKnownWallets = mconcat
-                    [ Cardano.Emulator.GuessingGame.wallets
-                    , Cardano.Emulator.Job.wallets
-                    ]
+allKnownWallets = Cardano.Emulator.Job.wallets
 
 fromTx :: [Tx] -> SimulatedChain
 fromTx tx = SimulatedChain
