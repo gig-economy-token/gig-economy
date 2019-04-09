@@ -11,13 +11,6 @@
 
 /status                               BlockchainStatusR GET POST
 
-/player1                              Player1R GET
-/player1/startGame                    Player1StartGameR POST
-/player1/guess                        Player1GuessR POST
-
-/player2                              Player2R GET
-/player2/lock                         Player2LockR POST
-
 /job/employer                         EmployerR GET
 /job/employer/postOffer               EmployerPostOfferR POST
 /job/employer/closeOffer              EmployerCloseOfferR POST
