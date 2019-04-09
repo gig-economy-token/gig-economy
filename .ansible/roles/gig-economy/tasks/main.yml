@@ -14,3 +14,10 @@
     name: gig-economy
     state: started
     enabled: true
+
+- name: Copy gig to sudoers.d
+  copy:
+    src: gig
+    dest: /etc/sudoers.d/gig
+    owner: root
+    group: root

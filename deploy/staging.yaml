@@ -7,3 +7,5 @@ revision: origin/master
 copy_files:
   - src: .stack-work/install/x86_64-linux/lts-12.26/8.4.4/bin/gig-economy
     dest: bin/gig-economy
+
+restart_command: sudo systemctl restart gig-economy.service

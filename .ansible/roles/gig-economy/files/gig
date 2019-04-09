@@ -1,0 +1,4 @@
+gig ALL=(ALL) NOPASSWD: /bin/systemctl restart gig-economy.service
+gig ALL=(ALL) NOPASSWD: /bin/systemctl start gig-economy.service
+gig ALL=(ALL) NOPASSWD: /bin/systemctl status gig-economy.service
+gig ALL=(ALL) NOPASSWD: /bin/systemctl stop gig-economy.service
