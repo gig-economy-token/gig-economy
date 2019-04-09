@@ -1,0 +1,12 @@
+[Unit]
+Description=GiG Economy Token
+
+[Service]
+Environment=GIG_ECONOMY_APPROOT=https://{{ general_domain }}
+WorkingDirectory={{ hapistrano_dir }}/gig-economy/current
+ExecStart={{ hapistrano_dir }}/gig-economy/current/bin/gig-economy
+User={{ general_deploy_user }}
+Group={{ general_deploy_user }}
+
+[Install]
+WantedBy=multi-user.target

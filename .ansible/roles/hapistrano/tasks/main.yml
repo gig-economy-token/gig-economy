@@ -1,0 +1,36 @@
+---
+- name: Create projects directory
+  file:
+    path: /var/projects
+    state: directory
+    owner: root
+    group: root
+
+- name: Create application directory
+  file:
+    path: /var/projects/gig-economy
+    state: directory
+    owner: "{{ general_deploy_user }}"
+    group: "{{ general_deploy_user }}"
+
+- name: Copy private key
+  file:
+    dest: "/home/{{ general_deploy_user }}/.ssh/id_rsa"
+    content: "{{ hapistrano_private_key }}"
+    owner: "{{ general_deploy_user }}"
+    group: "{{ general_deploy_user }}"
+    mode: 0600
+
+- name: Copy public key
+  file:
+    dest: "/home/{{ general_deploy_user }}/.ssh/id_rsa.pub"
+    content: "{{ hapistrano_public_key }}"
+    owner: "{{ general_deploy_user }}"
+    group: "{{ general_deploy_user }}"
+    mode: 0644
+
+- name: Add github.com to list of known_hosts
+  known_hosts:
+    path: "/home/{{ general_deploy_user }}/.ssh/known_hosts"
+    name: github.com
+    key: "|1|vI/8CpD73X8YKtXcTCucvd0m5JU=|hwJD0A/IKceN7DSqzbUSAojF9Uw= ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ=="

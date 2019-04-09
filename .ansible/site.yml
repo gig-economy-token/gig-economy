@@ -1,0 +1,14 @@
+---
+- hosts: all
+  become: true
+  roles:
+    - role: users
+      tags: users
+    - role: geerlingguy.certbot
+      tags: proxy
+    - role: geerlingguy.nginx
+      tags: proxy
+    - role: hapistrano
+      tags: haskell
+    - role: gig-economy
+      tags: haskell

@@ -1,0 +1,9 @@
+---
+deploy_path: /var/projects/gig-economy
+host: gig@demo.getgig.org
+repo: git@github.com:stackbuilders/gig-economy.git
+revision: origin/master
+
+copy_files:
+  - src: .stack-work/install/x86_64-linux/lts-12.26/8.4.4/bin/gig-economy
+    dest: bin/gig-economy

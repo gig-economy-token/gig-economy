@@ -1,0 +1,14 @@
+---
+- name: "{{ user.name }} - Create user"
+  user:
+    name: "{{ user.name }}"
+    shell: /bin/bash
+    state: present
+
+- name: "{{ user.name }} - Authorize keys"
+  authorized_key:
+    user: "{{ user.name }}"
+    key: "{{ item.key }}"
+    comment: "{{ item.comment }}"
+    state: present
+  with_items: "{{ user.authorized_keys }}"

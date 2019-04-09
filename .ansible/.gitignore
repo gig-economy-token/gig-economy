@@ -1,0 +1,4 @@
+.galaxies/
+.vagrant/
+.vault-password
+site.retry
