@@ -43,6 +43,7 @@ import           Data.ByteString.Lazy (ByteString)
 import Cardano.JobContract.Types
 import Cardano.JobContract.Contracts
 
+-- FIXME: check funds before adding the job offer
 postOffer :: (WalletAPI m, WalletDiagnostics m) => JobOfferForm -> m ()
 postOffer jof = do
     pk <- pubKey <$> myKeyPair
