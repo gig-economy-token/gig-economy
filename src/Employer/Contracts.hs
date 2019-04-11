@@ -1,9 +1,18 @@
 module Employer.Contracts where
 
+import qualified Ledger as L
+import qualified Ledger.Value as L
+import qualified Wallet.API as W
+
 import Cardano.JobContract.Types
-import Wallet.API
 
-postJobOffer :: (Monad m, WalletAPI m) => JobOffer -> m ()
+postJobOffer :: (Monad m, W.WalletAPI m) => JobOffer -> m ()
 postJobOffer JobOffer{..} = do
+  let value = L.singleton (L.currencySymbol 1) joPayout
+  W.payToScript_ W.defaultSlotRange employerAddress value undefined
 
-  payToScript_ undefined undefined (Value [(_, joPayout)]) undefined
+employerAddress :: L.Address
+employerAddress = L.scriptAddress employerValidator
+
+employerValidator :: L.ValidatorScript
+employerValidator = undefined

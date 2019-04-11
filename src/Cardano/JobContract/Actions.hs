@@ -50,7 +50,7 @@ postOffer jof = do
     let offer = toJobOffer jof pk
         ds = DataScript (Ledger.lifted offer)
     subscribeToJobApplicationBoard offer
-    void $ payToScript defaultSlotRange jobBoardAddress ($$(adaValueOf) 0) ds
+    payToScript_ defaultSlotRange jobBoardAddress ($$(adaValueOf) 0)
 
 closeOffer :: (WalletAPI m, WalletDiagnostics m) => JobOfferForm -> m ()
 closeOffer jof = do
