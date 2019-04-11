@@ -43,15 +43,15 @@ openJobOffer jobOffer@JobOffer{..} =
       script = L.DataScript $ L.lifted jobOffer
   in W.payToScript_ W.defaultSlotRange jobOfferAddress value script
 
-closeJobOffer :: W.MonadWallet m => m ()
-closeJobOffer =
+closeJobOffer :: W.MonadWallet m => L.TxId -> m ()
+closeJobOffer txId =
   let script = L.RedeemerScript (L.lifted CloseOffer)
-  in W.collectFromScript W.defaultSlotRange jobOfferValidator script
+  in W.collectFromScriptTxn W.defaultSlotRange jobOfferValidator script txId
 
-applyJobOffer :: W.MonadWallet m => m ()
-applyJobOffer = do
+applyJobOffer :: W.MonadWallet m => L.TxId -> m ()
+applyJobOffer txId = do
   let script = L.RedeemerScript (L.lifted ApplyOffer)
-  W.collectFromScript W.defaultSlotRange jobOfferValidator script
+  W.collectFromScriptTxn W.defaultSlotRange jobOfferValidator script txId
 
 -- Helpers
 
