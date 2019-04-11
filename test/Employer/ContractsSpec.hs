@@ -10,20 +10,18 @@ import Data.Either
 import Control.Monad
 
 spec :: Spec
-spec =
-  describe "postJobOffer" $ do
+spec = do
+  describe "openJobOffer" $ do
     it "creates a job offer when there are enough funds" $ do
       let result =
             evalTraceTxPool initialTxPool $ do
               addBlocksAndNotify wallets 1
 
               (tx : _) <- walletAction employerWallet $
-                postJobOffer JobOffer
-                  { jobOfferId          = 1
-                  , jobOfferTitle       = "Foo"
+                openJobOffer JobOffer
+                  { jobOfferTitle       = "Foo"
                   , jobOfferDescription = "Bar"
                   , jobOfferPayout      = 10
-                  , jobOfferStatus      = Opened
                   }
 
               addBlocksAndNotify wallets 1
@@ -39,13 +37,11 @@ spec =
             evalTraceTxPool initialTxPool $ do
               addBlocksAndNotify wallets 1
 
-              void $ walletAction employerWallet $
-                postJobOffer JobOffer
-                  { jobOfferId          = 1
-                  , jobOfferTitle       = "Foo"
+              runEmployerAction $
+                openJobOffer JobOffer
+                  { jobOfferTitle       = "Foo"
                   , jobOfferDescription = "Bar"
                   , jobOfferPayout      = 20
-                  , jobOfferStatus      = Opened
                   }
 
               addBlocksAndNotify wallets 1
@@ -55,6 +51,78 @@ spec =
 
       result `shouldSatisfy` isRight
 
+  describe "closeOffer" $ do
+    it "redeems employer funds if the offer is closed" $ do
+      let (result, bar) =
+            runTraceTxPool initialTxPool $ do
+              addBlocksAndNotify wallets 1
+
+              runEmployerAction $
+                openJobOffer JobOffer
+                  { jobOfferTitle       = "Foo"
+                  , jobOfferDescription = "Bar"
+                  , jobOfferPayout      = 5
+                  }
+
+              assertOwnFundsEq employerWallet (mkValue 5)
+
+              runEmployerAction closeJobOffer
+
+              assertOwnFundsEq employerWallet (mkValue 10)
+
+
+      mapM_ print (_emulatorLog bar)
+
+      result `shouldSatisfy` isRight
+
+    it "does nothing if there was no job offer available<Paste>" $ do
+      let (result, bar) =
+            runTraceTxPool initialTxPool $ do
+              addBlocksAndNotify wallets 1
+
+              runEmployerAction closeJobOffer
+
+              assertOwnFundsEq employerWallet (mkValue 10)
+
+
+      mapM_ print (_emulatorLog bar)
+
+      result `shouldSatisfy` isRight
+
+  describe "applyJobOffer" $ do
+    it "..." $ do
+      let (result, bar) =
+            runTraceTxPool initialTxPool $ do
+              addBlocksAndNotify wallets 1
+
+              runEmployeeAction subscribeToEmployer
+
+              runEmployerAction $
+                openJobOffer JobOffer
+                  { jobOfferTitle       = "Foo"
+                  , jobOfferDescription = "Bar"
+                  , jobOfferPayout      = 5
+                  }
+
+              assertOwnFundsEq employerWallet (mkValue 5)
+
+              runEmployeeAction applyJobOffer
+
+              assertOwnFundsEq employeeWallet (mkValue 5)
+
+
+      mapM_ print (_emulatorLog bar)
+
+      result `shouldSatisfy` isRight
+
+
+-- Runners
+
+runEmployerAction :: m () -> Trace m ()
+runEmployerAction = void .runWalletActionAndProcessPending wallets employerWallet
+
+runEmployeeAction :: m () -> Trace m ()
+runEmployeeAction = void . runWalletActionAndProcessPending wallets employeeWallet
 
 -- TODO: move this out to a separate module
 
