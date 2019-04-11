@@ -128,7 +128,7 @@ instance Yesod App where
                     , menuItemAccessCallback = True
                     }
                 , NavbarRight $ MenuItem
-                    { menuItemLabel = "Employee"
+                    { menuItemLabel = "Freelancer"
                     , menuItemRoute = EmployeeR
                     , menuItemAccessCallback = True
                     }
