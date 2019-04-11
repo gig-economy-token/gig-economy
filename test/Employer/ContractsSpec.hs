@@ -23,10 +23,19 @@ spec = do
               openJobOffer JobOffer
                 { jobOfferTitle       = "Foo"
                 , jobOfferDescription = "Bar"
-                , jobOfferPayout      = 10
+                , jobOfferPayout      = L.adaValueOf 5
                 }
 
-            assertEmployerFundsEq (L.adaValueOf 0)
+            assertEmployerFundsEq (L.adaValueOf 5)
+
+            _ <- runEmployerAction $
+              openJobOffer JobOffer
+                { jobOfferTitle       = "Foo"
+                , jobOfferDescription = "Bar"
+                , jobOfferPayout      = L.adaValueOf 4
+                }
+
+            assertEmployerFundsEq (L.adaValueOf 1)
 
 
     result `shouldSatisfy` isRight

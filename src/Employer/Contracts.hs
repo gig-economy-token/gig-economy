@@ -23,7 +23,7 @@ import Data.ByteString.Lazy
 data JobOffer = JobOffer
   { jobOfferTitle       :: ByteString
   , jobOfferDescription :: ByteString
-  , jobOfferPayout      :: Int
+  , jobOfferPayout      :: L.Value
   } deriving (Eq, Show)
 
 data JobOfferActions
@@ -39,9 +39,8 @@ subscribeToEmployer = W.startWatching jobOfferAddress
 
 openJobOffer :: W.MonadWallet m => JobOffer -> m ()
 openJobOffer jobOffer@JobOffer{..} =
-  let value  = L.singleton (L.currencySymbol 1) jobOfferPayout
-      script = L.DataScript $ L.lifted jobOffer
-  in W.payToScript_ W.defaultSlotRange jobOfferAddress value script
+  let script = L.DataScript $ L.lifted jobOffer
+  in W.payToScript_ W.defaultSlotRange jobOfferAddress jobOfferPayout script
 
 closeJobOffer :: W.MonadWallet m => L.TxId -> m ()
 closeJobOffer txId =
