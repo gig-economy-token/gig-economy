@@ -7,16 +7,39 @@ import Wallet.API
 import qualified Ledger as L
 import qualified Ledger.Value as L
 import Data.Either
+import Control.Monad
 
 spec :: Spec
 spec =
-  describe "postJobOffer" $
-    it "creates a job offer with status opened" $ do
-      let (foo, bar@EmulatorState{..}) =
-            runTraceTxPool initialTxPool $ do
-              processPending >>= walletsNotifyBlock wallets
+  describe "postJobOffer" $ do
+    it "creates a job offer when there are enough funds" $ do
+      let result =
+            evalTraceTxPool initialTxPool $ do
+              addBlocksAndNotify wallets 1
 
-              walletAction employerWallet $
+              (tx : _) <- walletAction employerWallet $
+                postJobOffer JobOffer
+                  { jobOfferId          = 1
+                  , jobOfferTitle       = "Foo"
+                  , jobOfferDescription = "Bar"
+                  , jobOfferPayout      = 10
+                  , jobOfferStatus      = Opened
+                  }
+
+              addBlocksAndNotify wallets 1
+
+              assertOwnFundsEq employerWallet (mkValue 0)
+              assertIsValidated tx
+
+
+      result `shouldSatisfy` isRight
+
+    it "does not create a job offer when there are not enough funds" $ do
+      let result =
+            evalTraceTxPool initialTxPool $ do
+              addBlocksAndNotify wallets 1
+
+              void $ walletAction employerWallet $
                 postJobOffer JobOffer
                   { jobOfferId          = 1
                   , jobOfferTitle       = "Foo"
@@ -25,15 +48,15 @@ spec =
                   , jobOfferStatus      = Opened
                   }
 
-              processPending >>= walletsNotifyBlock wallets
+              addBlocksAndNotify wallets 1
 
-              --   let value = L.singleton (L.currencySymbol 1) 10
-              --   payToPublicKey_ defaultSlotRange value (PubKey 1)
+              assertOwnFundsEq employerWallet (mkValue 10)
 
-      print foo
-      print bar
 
-      _emulatorLog `shouldBe` []
+      result `shouldSatisfy` isRight
+
+
+-- TODO: move this out to a separate module
 
 wallets :: [Wallet]
 wallets = [employerWallet, employeeWallet]
@@ -47,10 +70,12 @@ employeeWallet = Wallet 2
 initialTxPool :: TxPool
 initialTxPool = pure L.Tx
   { txInputs     = mempty
-  , txOutputs    = pure $ L.pubKeyTxOut value (PubKey 1)
-  , txForge      = value
+  , txOutputs    = pure $ L.pubKeyTxOut (mkValue 10) (PubKey 1)
+  , txForge      = mkValue 10
   , txFee        = fromInteger 0
   , txValidRange = defaultSlotRange
   }
   where
-    value = L.singleton (L.currencySymbol 1) 10
+
+mkValue :: Int -> L.Value
+mkValue = L.singleton (L.currencySymbol 1)
