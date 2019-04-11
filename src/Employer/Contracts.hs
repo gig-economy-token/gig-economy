@@ -17,14 +17,16 @@ data JobOffer = JobOffer
   , jobOfferTitle       :: ByteString
   , jobOfferDescription :: ByteString
   , jobOfferPayout      :: Int
+  , jobOfferStatus      :: JobOfferStatus
   } deriving (Eq, Show)
 
-P.makeLift ''JobOffer
+data JobOfferStatus
+  = Opened
+  | Closed
+  deriving (Eq, Show)
 
 data JobCompleted = JobCompleted Int
   deriving (Eq, Show)
-
-P.makeLift ''JobCompleted
 
 postJobOffer :: (Monad m, W.WalletAPI m) => JobOffer -> m ()
 postJobOffer jobOffer@JobOffer{..} =
@@ -37,10 +39,10 @@ employerAddress = L.scriptAddress employerValidator
 
 employerValidator :: L.ValidatorScript
 employerValidator = L.ValidatorScript (L.fromCompiledCode $$(P.compile [||
-  \(JobOffer joId _ _ _) (JobCompleted jcId) (_ :: L.PendingTx) ->
+  \(JobOffer joId _ _ _ _) (JobCompleted jcId) (_ :: L.PendingTx) ->
     if $$(P.eq) joId jcId
     then ()
-    else ($$(P.error) ($$(P.traceH) "asd" ()))
+    else ($$(P.error) ($$(P.traceH) "JobOffer id does not match" ()))
   ||]))
 
 completeJob :: (Monad m, W.WalletAPI m) => Int -> m ()
@@ -48,3 +50,7 @@ completeJob a = W.collectFromScript W.defaultSlotRange employerValidator (foo a)
 
 foo :: Int -> L.RedeemerScript
 foo s = L.RedeemerScript $ L.lifted (JobCompleted s)
+
+P.makeLift ''JobOffer
+P.makeLift ''JobOfferStatus
+P.makeLift ''JobCompleted
