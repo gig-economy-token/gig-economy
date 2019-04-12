@@ -25,7 +25,7 @@ data JobOffer = JobOffer
 
 data JobOfferActions
   = ApplyOffer
-  | CloseOffer
+  | CloseOffer W.PubKey
   deriving (Eq, Show)
 
 
@@ -40,13 +40,14 @@ openJobOffer jobOffer@JobOffer{..} =
   in W.payToScript_ W.defaultSlotRange jobOfferAddress jobOfferPayout script
 
 closeJobOffer :: W.MonadWallet m => L.TxId -> m ()
-closeJobOffer txId =
-  let script = L.RedeemerScript (L.lifted CloseOffer)
-  in W.collectFromScriptTxn W.defaultSlotRange jobOfferValidator script txId
+closeJobOffer txId = do
+  pk <- W.ownPubKey
+  let script = L.RedeemerScript $ L.lifted $ CloseOffer pk
+  W.collectFromScriptTxn W.defaultSlotRange jobOfferValidator script txId
 
 applyJobOffer :: W.MonadWallet m => L.TxId -> m ()
 applyJobOffer txId =
-  let script = L.RedeemerScript (L.lifted ApplyOffer)
+  let script = L.RedeemerScript $ L.lifted ApplyOffer
   in W.collectFromScriptTxn W.defaultSlotRange jobOfferValidator script txId
 
 -- Helpers
@@ -56,10 +57,13 @@ jobOfferAddress = L.scriptAddress jobOfferValidator
 
 jobOfferValidator :: L.ValidatorScript
 jobOfferValidator = L.ValidatorScript (L.fromCompiledCode $$(P.compile [||
-  \(_ :: JobOffer) (joa :: JobOfferActions) (_ :: L.PendingTx) ->
+  \(_ :: JobOffer) (joa :: JobOfferActions) (p :: L.PendingTx) ->
     case joa of
-      CloseOffer -> ()
-      _          -> ()
+      (CloseOffer pk) ->
+        if $$(L.txSignedBy) p pk
+          then ()
+          else $$(P.error) ($$(P.traceH) "WRONG" ())
+      _ -> ()
   ||]))
 
 P.makeLift ''JobOffer
