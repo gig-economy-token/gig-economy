@@ -1,14 +1,14 @@
 module Employer.ContractsSpec where
 
-import Employer.Contracts
-import Test.Hspec
-import Wallet.Emulator
-import Wallet.API
 import qualified Ledger as L
 import qualified Ledger.Ada as L
-import qualified Ledger.Value as L
-import Data.Either
+
 import Control.Monad
+import Data.Either
+import Employer.Contracts
+import Test.Hspec
+import Wallet.API
+import Wallet.Emulator
 
 spec :: Spec
 spec = do
@@ -17,25 +17,45 @@ spec = do
           evalTraceTxPool initialTxPool $ do
             addBlocksAndNotify wallets 1
 
+            _ <- runEmployeeAction subscribeToEmployer
+
             assertEmployerFundsEq (L.adaValueOf 10)
 
-            _ <- runEmployerAction $
+            (tx1 : _) <- walletAction employerWallet $
               openJobOffer JobOffer
                 { jobOfferTitle       = "Foo"
                 , jobOfferDescription = "Bar"
                 , jobOfferPayout      = L.adaValueOf 5
                 }
 
+            addBlocksAndNotify wallets 1
             assertEmployerFundsEq (L.adaValueOf 5)
 
-            _ <- runEmployerAction $
+            (tx2 : _) <- walletAction employerWallet $
               openJobOffer JobOffer
                 { jobOfferTitle       = "Foo"
                 , jobOfferDescription = "Bar"
                 , jobOfferPayout      = L.adaValueOf 4
                 }
 
+            addBlocksAndNotify wallets 1
             assertEmployerFundsEq (L.adaValueOf 1)
+
+            _ <- runEmployerAction $ closeJobOffer (L.hashTx tx2)
+
+            assertEmployerFundsEq (L.adaValueOf 5)
+
+            _ <- runEmployerAction $ closeJobOffer (L.hashTx tx2)
+
+            assertEmployerFundsEq (L.adaValueOf 5)
+
+            assertEmployeeFundsEq (L.adaValueOf 0)
+
+            _ <- runEmployeeAction $ applyJobOffer (L.hashTx tx1)
+            _ <- runEmployeeAction $ applyJobOffer (L.hashTx tx2)
+
+            assertEmployerFundsEq (L.adaValueOf 5)
+            assertEmployeeFundsEq (L.adaValueOf 5)
 
 
     result `shouldSatisfy` isRight
@@ -52,6 +72,9 @@ runEmployeeAction = void . runWalletActionAndProcessPending wallets employeeWall
 
 assertEmployerFundsEq :: L.Value -> Trace m ()
 assertEmployerFundsEq = assertOwnFundsEq employerWallet
+
+assertEmployeeFundsEq :: L.Value -> Trace m ()
+assertEmployeeFundsEq = assertOwnFundsEq employeeWallet
 
 -- TODO: move this out to a separate module
 

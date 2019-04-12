@@ -8,14 +8,11 @@ module Employer.Contracts
   , openJobOffer
   , closeJobOffer
   , applyJobOffer
-
-  , jobOfferAddress
   ) where
 
 import qualified Language.PlutusTx as P
 import qualified Ledger as L
 import qualified Ledger.Validation as L
-import qualified Ledger.Value as L
 import qualified Wallet.API as W
 
 import Data.ByteString.Lazy
@@ -48,9 +45,9 @@ closeJobOffer txId =
   in W.collectFromScriptTxn W.defaultSlotRange jobOfferValidator script txId
 
 applyJobOffer :: W.MonadWallet m => L.TxId -> m ()
-applyJobOffer txId = do
+applyJobOffer txId =
   let script = L.RedeemerScript (L.lifted ApplyOffer)
-  W.collectFromScriptTxn W.defaultSlotRange jobOfferValidator script txId
+  in W.collectFromScriptTxn W.defaultSlotRange jobOfferValidator script txId
 
 -- Helpers
 
