@@ -5,6 +5,7 @@ import qualified Ledger.Ada as L
 
 import Control.Monad
 import Data.Either
+import Debug.Trace
 import Employer.Contracts
 import Test.Hspec
 import Wallet.API
@@ -13,8 +14,8 @@ import Wallet.Emulator
 spec :: Spec
 spec = do
   it "..." $ do
-    let result =
-          evalTraceTxPool initialTxPool $ do
+    let EmulatorState{..} =
+          execTraceTxPool initialTxPool $ do
             addBlocksAndNotify wallets 1
 
             _ <- runEmployeeAction subscribeToEmployer
@@ -49,23 +50,27 @@ spec = do
             _ <- runEmployerAction $ closeJobOffer (L.hashTx tx2)
 
             assertEmployeeFundsEq (L.adaValueOf 0)
-						-- FIXME: not returning the funds
-            -- assertEmployerFundsEq (L.adaValueOf 5)
+            -- FIXME: not returning the funds
+            assertEmployerFundsEq (L.adaValueOf 5)
+            pure ()
 
-            _ <- runEmployerAction $ closeJobOffer (L.hashTx tx2)
+            -- _ <- runEmployerAction $ closeJobOffer (L.hashTx tx2)
 
             -- assertEmployerFundsEq (L.adaValueOf 5)
             -- assertEmployeeFundsEq (L.adaValueOf 0)
 
-            _ <- runEmployeeAction $ applyJobOffer (L.hashTx tx1)
-            _ <- runEmployeeAction $ applyJobOffer (L.hashTx tx2)
+            -- _ <- runEmployeeAction $ applyJobOffer (L.hashTx tx1)
+            -- _ <- runEmployeeAction $ applyJobOffer (L.hashTx tx2)
 
             -- assertEmployerFundsEq (L.adaValueOf 5)
             -- assertEmployeeFundsEq (L.adaValueOf 5)
-            pure ()
 
+    putStrLn "---------------"
+    mapM_ print _emulatorLog
+    putStrLn "---------------"
 
-    result `shouldSatisfy` isRight
+    pending
+    -- result `shouldSatisfy` isRight
 
 -- Runners
 
