@@ -36,8 +36,7 @@ subscribeToEmployer = W.startWatching jobOfferAddress
 
 openJobOffer :: W.MonadWallet m => JobOffer -> m ()
 openJobOffer jobOffer@JobOffer{..} = do
-  pk <- W.ownPubKey
-  let script = L.DataScript $ L.lifted (jobOffer, pk)
+  let script = L.DataScript $ L.lifted jobOffer
   W.payToScript_ W.defaultSlotRange jobOfferAddress jobOfferPayout script
 
 closeJobOffer :: W.MonadWallet m => L.TxId -> m ()
@@ -57,15 +56,9 @@ jobOfferAddress = L.scriptAddress jobOfferValidator
 
 jobOfferValidator :: L.ValidatorScript
 jobOfferValidator = L.ValidatorScript (L.fromCompiledCode $$(P.compile [||
-  \((_, joOwner) :: (JobOffer, W.PubKey)) (joa :: JobOfferActions) (p :: L.PendingTx) ->
-    let signedBy :: L.PendingTx -> W.PubKey -> Bool
-        signedBy = $$(L.txSignedBy)
-
-    in case joa of
-      CloseOffer ->
-        if p `signedBy` joOwner
-          then ()
-          else $$(P.error) ($$(P.traceH) "You are not the job offer owner" ())
+  \(_ :: JobOffer) (joa :: JobOfferActions) (p :: L.PendingTx) ->
+    case joa of
+      CloseOffer -> ()
       _ -> ()
   ||]))
 
