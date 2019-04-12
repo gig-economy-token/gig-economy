@@ -27,7 +27,7 @@ import Prelude hiding ((++))
 import Control.Monad (guard, void)
 import Control.Lens
 import           Ledger hiding (inputs, out, getPubKey)
-import           Ledger.Ada.TH as Ada
+import           Ledger.Ada as L
 import           Ledger.Value as Value
 import Data.Foldable (foldl')
 import           Wallet hiding (addresses, getPubKey)
@@ -49,7 +49,7 @@ postOffer jof = do
     let offer = toJobOffer jof pk
         ds = DataScript (Ledger.lifted offer)
     subscribeToJobApplicationBoard offer
-    void $ payToScript defaultSlotRange jobBoardAddress ($$(adaValueOf) 0) ds
+    payToScript_ defaultSlotRange jobBoardAddress (L.adaValueOf (jofPayout jof)) ds
 
 closeOffer :: (WalletAPI m, WalletDiagnostics m) => JobOfferForm -> m ()
 closeOffer jof = do
@@ -67,14 +67,14 @@ closeOffer jof = do
                       [x] -> pure x
                       _ -> Left "closeOffer: multiple entries found"
         
-    (txid, tx) <- case mtxid of
+    (txid, _) <- case mtxid of
                       Left err -> error err
                       Right a -> pure a
     let inputs = Set.singleton $ TxInOf
                                   { txInRef=txid
                                   , txInType=ConsumeScriptAddress jobBoard unitRedeemer
                                   }
-    out <- ownPubKeyTxOut ($$(adaValueOf) 0)
+    out <- ownPubKeyTxOut $ L.adaValueOf 0
     void $ createTxAndSubmit defaultSlotRange inputs [out]
 
 applyToOffer :: (WalletAPI m, WalletDiagnostics m) => JobOffer -> m ()
@@ -85,7 +85,7 @@ applyToOffer offer = do
                       }
     let ds = DataScript (Ledger.lifted application)
     subscribeToEscrow
-    payToScript_ defaultSlotRange (jobAddress offer) ($$(adaValueOf) 0) ds
+    payToScript_ defaultSlotRange (jobAddress offer) (L.adaValueOf 0) ds
 
 subscribeToJobBoard :: WalletAPI m => m ()
 subscribeToJobBoard = startWatching jobBoardAddress
