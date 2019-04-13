@@ -26,7 +26,3 @@
 /job/arbiter/monitorEscrow            ArbiterMonitorEscrowR POST
 /job/arbiter/acceptEscrow             ArbiterAcceptEscrowR POST
 /job/arbiter/rejectEscrow             ArbiterRejectEscrowR POST
-
-/comments CommentR POST
-
-/profile ProfileR GET
