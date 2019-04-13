@@ -9,6 +9,7 @@ module Handler.Job.Employer.View
 import Import
 import Cardano.JobContract
 import Cardano.Emulator.Job
+import Cardano.Emulator.State.Views
 import Cardano.Html.Emulator
 import Handler.Job.Forms
 import Wallet.Emulator.AddressMap
@@ -21,13 +22,16 @@ renderLayoutWithError widgetEnctype err = renderLayout' (Just widgetEnctype) (Ju
 
 renderLayout' :: Maybe (Widget, Enctype) -> Maybe Text -> Handler Html
 renderLayout' formData errMsg = do
-    (postOfferForm, postOfferEnctype) <- case formData of
-                                              Nothing -> generateFormPost jobOfferForm
-                                              Just f -> pure f
+    (postOfferForm, postOfferEnctype) <-
+      case formData of
+        Nothing -> generateFormPost jobOfferForm
+        Just f -> pure f
+
     acceptanceListing <- mkAcceptanceListing
-    funds <- fundsInWallet employerWallet
-    defaultLayout $ do
-        $(widgetFile "job/employer")
+    mwalletState <- walletStateByWallet employerWallet
+    case mwalletState of
+      Nothing          -> notFound
+      Just walletState -> defaultLayout $(widgetFile "job/employer")
 
 data Escrow
   = NoEscrow (Widget, Enctype)

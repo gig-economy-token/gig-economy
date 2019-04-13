@@ -4,7 +4,11 @@
       <div .col-lg-12>
         <div .page-header>
           <h1>Freelancer
-          <p>Funds: ADA#{funds}
+
+      <div .col-lg-12>
+        ^{walletW employeeWallet walletState}
+
+      <div .col-lg-12>
           $case errMsg
             $of Nothing
             $of Just msg

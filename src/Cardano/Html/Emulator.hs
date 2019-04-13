@@ -11,6 +11,7 @@ module Cardano.Html.Emulator
   , readWatchedAddresses'
   , runOnBlockchain
   , fundsInWallet
+  , walletStateByWallet
   ) where
 
 import Import
@@ -83,3 +84,8 @@ fundsInWallet :: HasSimulatedChain m => Wallet -> m (Int)
 fundsInWallet w = do
                     es <- readEmulatorState
                     pure $ fromMaybe 0 $ getResultingFunds <$> Map.lookup w (_walletStates es)
+
+walletStateByWallet :: HasSimulatedChain m => Wallet -> m (Maybe WalletState)
+walletStateByWallet wallet = do
+  EmulatorState{..} <- readEmulatorState
+  pure $ Map.lookup wallet _walletStates
