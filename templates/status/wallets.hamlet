@@ -8,9 +8,4 @@
     $else
       $forall (wallet, walletState) <- M.toList wallets
         <div .col-md-4>
-          <div .panel.panel-default>
-            <div .panel-heading>
-              <h3 .panel-title>Wallet ##{getWallet wallet}
-
-            <div .panel-body>
-              ADA: #{getResultingFunds walletState}
+          ^{walletW wallet walletState}

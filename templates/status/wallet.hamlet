@@ -1,0 +1,6 @@
+<div .panel.panel-default>
+  <div .panel-heading>
+    <h3 .panel-title>Wallet ##{getWallet wallet}
+
+  <div .panel-body>
+    GET: #{getResultingFunds walletState}

@@ -10,6 +10,7 @@ import Import
 import Wallet.Emulator
 import Cardano.JobContract
 import Cardano.Emulator.Job
+import Cardano.Emulator.State.Views
 import Cardano.Html.Emulator
 import Handler.Job.Forms
 
@@ -22,9 +23,10 @@ renderLayoutWithError e = renderLayout' (Just e)
 renderLayout' :: Maybe Text -> Handler Html
 renderLayout' errMsg = do
     offers <- mkJobBoard employeeWallet
-    funds <- fundsInWallet employeeWallet
-    defaultLayout $ do
-        $(widgetFile "job/employee")
+    mwalletState <- walletStateByWallet employeeWallet
+    case mwalletState of
+      Nothing          -> notFound
+      Just walletState -> defaultLayout $(widgetFile "job/employee")
 
 newtype JobBoard = JobBoard [(JobOffer, (Widget, Enctype))]
 

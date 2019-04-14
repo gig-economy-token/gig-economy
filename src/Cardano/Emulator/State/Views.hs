@@ -2,6 +2,7 @@
 
 module Cardano.Emulator.State.Views
   ( statusW
+  , walletW
   ) where
 
 import qualified Data.Map as M
@@ -18,6 +19,9 @@ statusW EmulatorState{..} = $(I.widgetFile "status")
 
 walletsW :: M.Map Wallet WalletState -> I.Widget
 walletsW wallets = $(I.widgetFile "status/wallets")
+
+walletW :: Wallet -> WalletState -> I.Widget
+walletW wallet walletState = $(I.widgetFile "status/wallet")
 
 blocksW :: Blockchain -> I.Widget
 blocksW blocks = $(I.widgetFile "status/blocks")

@@ -10,6 +10,7 @@ import Import
 import Wallet.Emulator
 import Cardano.JobContract
 import Cardano.Emulator.Job
+import Cardano.Emulator.State.Views
 import Cardano.Html.Emulator
 import Handler.Job.Forms
 
@@ -27,10 +28,11 @@ renderLayout = renderLayout' Nothing
 
 renderLayout' :: Maybe Text -> Handler Html
 renderLayout' errMsg = do
-    escrows <- mkEscrows arbiterWallet
-    funds <- fundsInWallet arbiterWallet
-    defaultLayout $ do
-        $(widgetFile "job/arbiter")
+  escrows <- mkEscrows arbiterWallet
+  mwalletState <- walletStateByWallet arbiterWallet
+  case mwalletState of
+    Nothing          -> notFound
+    Just walletState -> defaultLayout $(widgetFile "job/arbiter")
 
 mkEscrows :: Wallet -> Handler Escrows
 mkEscrows wallet = do
