@@ -95,9 +95,4 @@ createUser ident = runDB $ do
         { userIdent = ident
         , userPassword = Nothing
         }
-    _ <- insert Email
-        { emailEmail = ident
-        , emailUserId = Just $ entityKey user
-        , emailVerkey = Nothing
-        }
     return user
