@@ -1,4 +1,8 @@
-<div>
+<div .row>
+  <div .col-md-12>
+    <form action=@{I.EmulatorStateDeleteR} method=POST>
+      <button .btn.btn-danger type=submit>Reset
+
   ^{walletsW _walletStates}
   ^{blocksW _chainNewestFirst}
   ^{logsW _emulatorLog}

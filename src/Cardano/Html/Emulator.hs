@@ -14,12 +14,15 @@ module Cardano.Html.Emulator
   , walletStateByWallet
   ) where
 
+import qualified Data.Map as Map
+import qualified Control.Monad.State as S
+
 import Import
 import Yesod.Core.Types
 import Wallet.Emulator
 import Wallet.Emulator.AddressMap
-import qualified Data.Map as Map
 import Control.Monad (void)
+import Control.Monad.State (StateT)
 
 import Cardano.Emulator
 import Cardano.Helpers
@@ -30,9 +33,14 @@ class Monad m => HasSimulatedChain m where
 
 instance HasSimulatedChain Handler where
   readSimulatedChain = readSimulatedChainRef >>= readIORef
+
   modifySimulatedChain f = do
-                            scRef <- readSimulatedChainRef
-                            atomicModifyIORef' scRef (\sc -> (f sc, ()))
+    scRef <- readSimulatedChainRef
+    atomicModifyIORef' scRef (\sc -> (f sc, ()))
+
+instance Monad m => HasSimulatedChain (StateT SimulatedChain m) where
+  readSimulatedChain = S.get
+  modifySimulatedChain = S.modify
 
 readEmulatorState :: HasSimulatedChain m => m EmulatorState
 readEmulatorState = scEmulatorState <$> readSimulatedChain
@@ -43,8 +51,8 @@ readEmulatorState = scEmulatorState <$> readSimulatedChain
 -- it is expected to be available on the real chain and real wallets.
 readWatchedAddresses :: HasSimulatedChain m => Wallet -> m AddressMap
 readWatchedAddresses w = do
-                          emState <- readEmulatorState
-                          pure (readWatchedAddresses' emState w)
+  emState <- readEmulatorState
+  pure (readWatchedAddresses' emState w)
 
 readWatchedAddresses' :: EmulatorState -> Wallet -> AddressMap
 readWatchedAddresses' emState w = _addressMap walletState
@@ -67,11 +75,9 @@ appendStep newStep = modifySimulatedChain f
                 }
 
 appendStepAndNotifyKnownWallets :: HasSimulatedChain m => Trace MockWallet a -> m ()
-appendStepAndNotifyKnownWallets newStep = appendStep stepAndNotify
-  where
-    stepAndNotify = do
-                    void $ newStep
-                    void $ processPending >>= walletsNotifyBlock allKnownWallets
+appendStepAndNotifyKnownWallets newStep = appendStep $ do
+  void $ newStep
+  void $ processPending >>= walletsNotifyBlock allKnownWallets
 
 -- Only for HasSimulatedChain Handler
 readSimulatedChainRef :: MonadReader (HandlerData c App) m => m (IORef SimulatedChain)
@@ -82,8 +88,8 @@ runOnBlockchain w = appendStepAndNotifyKnownWallets . walletAction w
 
 fundsInWallet :: HasSimulatedChain m => Wallet -> m (Int)
 fundsInWallet w = do
-                    es <- readEmulatorState
-                    pure $ fromMaybe 0 $ getResultingFunds <$> Map.lookup w (_walletStates es)
+  es <- readEmulatorState
+  pure $ fromMaybe 0 $ getResultingFunds <$> Map.lookup w (_walletStates es)
 
 walletStateByWallet :: HasSimulatedChain m => Wallet -> m (Maybe WalletState)
 walletStateByWallet wallet = do

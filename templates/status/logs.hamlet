@@ -1,4 +1,4 @@
-<div>
+<div .col-md-12>
   <h1>Logs (#{length logs})
   <div .row>
     <div .col-md-12>
