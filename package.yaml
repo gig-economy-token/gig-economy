@@ -58,6 +58,7 @@ dependencies:
 - servant-client
 - http-client
 - blaze-html
+- mtl
 
 ghc-options:
 - -Wall

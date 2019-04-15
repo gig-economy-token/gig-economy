@@ -26,3 +26,5 @@
 /job/arbiter/monitorEscrow            ArbiterMonitorEscrowR POST
 /job/arbiter/acceptEscrow             ArbiterAcceptEscrowR POST
 /job/arbiter/rejectEscrow             ArbiterRejectEscrowR POST
+
+/emulator-state/delete                EmulatorStateDeleteR POST

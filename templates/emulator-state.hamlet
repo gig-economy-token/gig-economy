@@ -1,8 +1,0 @@
-<div>
-  <div>
-    <h1>Wallet States
-    #{walletStatesW}
-
-  <div>
-    <h1>Emulator Log
-    #{emulatorLogW}
