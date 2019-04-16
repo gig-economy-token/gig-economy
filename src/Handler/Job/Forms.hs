@@ -11,9 +11,9 @@ import qualified Data.ByteString.Lazy.Char8 as B8
 import Yesod.Form.Bootstrap3
 
 jobOfferForm :: Html -> MForm Handler (FormResult JobOfferForm, Widget)
-jobOfferForm = renderDivs $ JobOfferForm
-              <$> areq descField (bfs ("Job description" :: Text)) Nothing
-              <*> areq payoutField (bfs ("Job payout" :: Text)) Nothing
+jobOfferForm = renderBootstrap3 horizontalForm $
+  JobOfferForm <$> areq descField (bfs MsgJobDescription) Nothing
+               <*> areq payoutField (bfs MsgJobPayout) Nothing
   where
     descField = convertField (B8.pack . unpack) (pack . B8.unpack) $
                 checkBool (/= "") ("Please enter a description" :: Text) $
@@ -33,3 +33,12 @@ hiddenJobEscrowForm joa = renderDivsNoLabels $ (\a b c d -> (JobOffer a b c, Job
               <*> areq hiddenField ("" { fsId = Just "b" }) (joPayout . fst <$> joa)
               <*> areq hiddenField ("" { fsId = Just "c" }) (joOfferer . fst <$> joa)
               <*> areq hiddenField ("" { fsId = Just "d" }) (jaAcceptor . snd <$> joa)
+
+horizontalForm :: BootstrapFormLayout
+horizontalForm =
+  BootstrapHorizontalForm
+    { bflLabelOffset = ColMd 0
+    , bflLabelSize = ColMd 2
+    , bflInputOffset = ColMd 0
+    , bflInputSize = ColMd 10
+    }
