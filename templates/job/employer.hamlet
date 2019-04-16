@@ -42,6 +42,8 @@
                                 <button .btn.btn-success type="submit">Accept escrow and deliver funds to freelancer
 
           <h2>Actions
-          <form method=POST action=@{EmployerPostOfferR} enctype=#{postOfferEnctype}>
+          <form method=POST action=@{EmployerPostOfferR} enctype=#{postOfferEnctype} .form-horizontal>
             ^{postOfferForm}
-            <button .btn.btn-primary.form-control type="submit">Submit job offer
+            <div .form-group>
+              <div .col-md-offset-2.col-md-10>
+                <button type=submit .btn.btn-primary>Submit job offer
