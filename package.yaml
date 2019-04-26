@@ -2,7 +2,7 @@ name:    gig-economy
 version: "0.0.0"
 license: MIT
 license-file: LICENSE
-author: Get GiG <yellowbear@cryptolab.net>
+author: Go Local Promotions Inc. <yellowbear@cryptolab.net>
 homepage: http://getgig.org
 
 dependencies:
