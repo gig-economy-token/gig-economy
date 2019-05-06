@@ -10,6 +10,8 @@ users:
         comment: sestrella@stackbuilders.com
       - key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDJrf8oku4CmmV1yN93icm29PJdW0ttWNZtg2K/PxVzGbARXCgWMrgS5IipiPblQwdF0mGGzvi0SqKy5qgem7i9Qryg9MCW/j03ShmufnAtqBZpGmww5u1/S/bqRt4//Pkk0QCXFb3PeE35978lxgqrVw6Jq1f85VvNdw1Vg3nDWikoIhG3X6xhqWty7ZzPrVboxPjVAgfW3XJXh/Cba2XL6JhJKq1wlDu7U1uwLHVgp5J0mXSIYJXeVSRIjKBoBsTDFsSfgxEa5sHqRmICIOfQ0/Ex3J+5bQyJzLO58OyaUNJzsVSliVfTXxO5LO2paDCDdbGycAFK9t04C6q9niZ/
         comment: smunoz@stackbuilders.com
+      - key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC+zUUkLv5dZ9SL7q81uxLSXEAbxn6hmsEJcJS+d/33MK5UYdUIDGa7BC1tL902Z+6bmCcA/40d9kWm9B9owZ8vAEOwVlhggL3mcphydEbyuH7zvbrTsNvxztZUcxETiZGrzadbS4xDup3SYiLCtuJhAs151XECd5oB3HgMMD1yb3VPjov6EC2HetUN/Al0RhTYVH9GxVStKrVzDi1E5rvUw8PzJJsAv1Xm054LTu1qJWjp2EePi5LOhzLxQXm2Kp9RGM4G3WYWaIw5yM/Or0HPdQOx7ADBJIWgzQJnuRFTc3zdoQFdqeOIpzqsIpOsLT8rGHu2iSRZwL75x0rnzZIZ1Ett8IHVdgpZghorbeXGAY0oLcL03raT7rJE5fQB62iQYZutZimyaNcSGsSNUHQfRyBWpakQdlDBQQFTdb3963H/iVcE5IC8LgNVlHXkH6vsCbPG0gxZlCe1VRwITe31odpxYbuKHTykQvOkyb8YHzBhP4dNsEr9OJWSjlJocabJ2bBuQh8kHvA+J1wLdVpfjN6wdyjdmLa32dOKjrzdvzXi+bwLArIYXiPV7bnuBOF8L3Gd1156n+6tqXkl+awWu3A629yq0OaavLcbTNFvoIcbKhFg73mUJTQ7Fzut0PCO1zm1FoBOPLUa5GAPQdfDrEaoVGTvnBvL/+8lW904Iw==
+        comment: cuco.saa@gmail.com
 
   - name: "{{ general_deploy_user }}"
     authorized_keys:
